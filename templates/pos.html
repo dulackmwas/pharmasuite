@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block title %}Point of Sale - PharmaSuite{% endblock %}
+{% block header %}Point of Sale{% endblock %}
+
+{% block content %}
+<style>
+    .pos-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #E8EDF2; }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-empty { text-align: center; padding: 48px; color: #5C6B7A; }
+    .cart-summary { padding: 16px; border-top: 1px solid #E8EDF2; }
+    .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    .cart-actions { display: flex; flex-direction: column; gap: 8px; }
+    
+    .product-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .product-item { background: white; border: 1px solid #E8EDF2; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 150ms; }
+    .product-item:hover { border-color: #1E3A5F; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .product-name { font-weight: 600; margin-bottom: 4px; }
+    .product-price { color: #1E3A5F; font-size: 16px; font-weight: 600; }
+    .product-sku { color: #5C6B7A; font-size: 12px; }
+    .product-stock { font-size: 12px; color: #5C6B7A; }
+    
+    .search-result { position: absolute; background: white; border: 1px solid #E8EDF2; border-radius: 4px; width: 300px; max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #E8EDF2; }
+    .search-item:hover { background: #E3F2FD; }
+</style>
+
+<div class="pos-layout">
+    <div>
+        <div class="card mb-2">
+            <div class="card-header">Add Items</div>
+            <div class="search-bar">
+                <input type="text" id="barcode-input" class="form-input" placeholder="Scan barcode or enter SKU..." autofocus>
+                <button class="btn btn-primary" onclick="searchProducts()">Search</button>
+            </div>
+            <div id="search-results" class="search-result" style="display: none;"></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">Quick Products</div>
+            <div class="product-list">
+                {% for product in products %}
+                <div class="product-item" onclick="addToCart({{ product.id }}, '{{ product.name|escape }}', {{ product.unit_price }})">
+                    <div class="product-name">{{ product.name }}</div>
+                    <div class="product-price">KSh {{ "%.2f"|format(product.unit_price) }}</div>
+                    {% if product.sku %}<div class="product-sku">SKU: {{ product.sku }}</div>{% endif %}
+                    {% if product.is_controlled %}
+                    <span class="badge badge-warning">Rx</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="position: sticky; top: 0;">
+        <div class="card-header">Current Sale</div>
+        <div id="cart-items" style="max-height: 400px; overflow-y: auto;">
+            <div class="cart-empty">No items added</div>
+        </div>
+        
+        <div class="cart-summary">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Subtotal:</span>
+                <span id="subtotal">KSh 0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Tax (8%):</span>
+                <span id="tax">KSh 0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Discount:</span>
+                <span id="discount">KSh 0.00</span>
+            </div>
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="total">KSh 0.00</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Discount</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="number" id="discount-amount" class="form-input" step="0.01" min="0" value="0" placeholder="0.00" onchange="applyDiscount()">
+                <select id="discount-type" class="form-select" style="width: 80px;" onchange="applyDiscount()">
+                    <option value="fixed">KSh</option>
+                    <option value="percentage">%</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Customer (Optional)</label>
+            <select id="customer-select" class="form-select">
+                <option value="">Walk-in Customer</option>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select id="payment-method" class="form-select">
+                <option value="cash">Cash</option>
+                <option value="mpesa">M-Pesa</option>
+                <option value="card">Card</option>
+                <option value="insurance">Insurance</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Amount Paid</label>
+            <input type="number" id="amount-paid" class="form-input" value="0" step="0.01" onchange="calculateChange()">
+        </div>
+        
+        <div class="cart-actions">
+            <button class="btn btn-success" onclick="processSale()" style="height: 48px; font-size: 16px;">Complete Sale</button>
+            <button class="btn btn-secondary" onclick="clearCart()">Clear Cart</button>
+        </div>
+    </div>
+</div>
+
+<!-- M-Pesa Payment Modal -->
+<div id="mpesa-modal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">M-Pesa Payment</h3>
+            <span class="modal-close" onclick="closeMpesaModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📱</div>
+                <h4>M-Pesa STK Push</h4>
+                <p style="color: #64748b;">Enter your M-Pesa registered phone number to receive payment prompt</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Phone Number *</label>
+                <input type="tel" id="mpesa-phone" class="form-input" placeholder="254XXXXXXXXX" required>
+                <small style="color: #64748b; font-size: 12px;">Format: 254XXXXXXXXX (without + or 0)</small>
+            </div>
+
+            <div class="alert alert-info" style="margin-bottom: 20px;">
+                <strong>Payment Amount:</strong> KSh <span id="mpesa-amount">0.00</span><br>
+                <strong>Note:</strong> You'll receive an STK push notification on your phone to complete the payment.
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="btn btn-primary" id="initiate-mpesa-btn" onclick="initiateMpesaPayment()" style="flex: 1;">
+                    Send STK Push
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeMpesaModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = [];
+const TAX_RATE = {{ tax_rate|default(0.08) }};
+
+function addToCart(productId, name, price) {
+    const existing = cart.find(item => item.productId === productId);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({ productId, name, price, quantity: 1 });
+    }
+    renderCart();
+}
+
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function updateQuantity(index, quantity) {
+    if (quantity <= 0) {
+        removeFromCart(index);
+    } else {
+        cart[index].quantity = quantity;
+    }
+    renderCart();
+}
+
+function renderCart() {
+    const container = document.getElementById('cart-items');
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty">No items added</div>';
+        updateTotals(0, 0, 0, 0);
+        return;
+    }
+
+    let html = '';
+    cart.forEach((item, index) => {
+        html += `
+            <div class="cart-item">
+                <div>
+                    <div style="font-weight: 500;">${item.name}</div>
+                    <div style="color: #5C6B7A;">KSh ${item.price.toFixed(2)} x ${item.quantity}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600;">KSh ${(item.price * item.quantity).toFixed(2)}</div>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="updateQuantity(${index}, ${item.quantity - 1})">-</button>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="updateQuantity(${index}, ${item.quantity + 1})">+</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+
+    let subtotal = 0;
+    cart.forEach(item => subtotal += item.price * item.quantity);
+
+    // Apply discount
+    const discountAmount = parseFloat(document.getElementById('discount-amount').value) || 0;
+    const discountType = document.getElementById('discount-type').value;
+    let discount = 0;
+
+    if (discountType === 'percentage') {
+        discount = subtotal * (discountAmount / 100);
+    } else {
+        discount = Math.min(discountAmount, subtotal); // Don't allow discount > subtotal
+    }
+
+    const taxableAmount = subtotal - discount;
+    const tax = taxableAmount * TAX_RATE;
+    const total = taxableAmount + tax;
+
+    updateTotals(subtotal, tax, discount, total);
+}
+
+function updateTotals(subtotal, tax, discount, total) {
+    document.getElementById('subtotal').textContent = 'KSh ' + subtotal.toFixed(2);
+    document.getElementById('tax').textContent = 'KSh ' + tax.toFixed(2);
+    document.getElementById('discount').textContent = 'KSh ' + discount.toFixed(2);
+    document.getElementById('total').textContent = 'KSh ' + total.toFixed(2);
+
+    const amountPaid = parseFloat(document.getElementById('amount-paid').value) || 0;
+    const change = Math.max(0, amountPaid - total);
+}
+
+function calculateChange() {
+    let subtotal = 0;
+    cart.forEach(item => subtotal += item.price * item.quantity);
+    const total = subtotal * (1 + TAX_RATE);
+    const amountPaid = parseFloat(document.getElementById('amount-paid').value) || 0;
+}
+
+function applyDiscount() {
+    renderCart(); // Recalculate totals with new discount
+}
+
+function clearCart() {
+    cart = [];
+    document.getElementById('discount-amount').value = '0';
+    renderCart();
+    document.getElementById('barcode-input').value = '';
+}
+
+function searchProducts() {
+    const query = document.getElementById('barcode-input').value;
+    if (!query) return;
+    
+    fetch('/pos/add-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barcode: query })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            addToCart(data.id, data.name, data.price);
+        }
+    });
+}
+
+document.getElementById('barcode-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchProducts();
+    }
+});
+
+function processSale() {
+    if (cart.length === 0) {
+        alert('Please add items to the cart');
+        return;
+    }
+
+    const paymentMethod = document.getElementById('payment-method').value;
+
+    if (paymentMethod === 'mpesa') {
+        showMpesaModal();
+    } else {
+        processPayment();
+    }
+}
+
+function processPayment() {
+    const discountAmount = parseFloat(document.getElementById('discount-amount').value) || 0;
+    const discountType = document.getElementById('discount-type').value;
+
+    const data = {
+        customer_id: document.getElementById('customer-select').value,
+        payment_method: document.getElementById('payment-method').value,
+        amount_paid: parseFloat(document.getElementById('amount-paid').value) || 0,
+        discount_amount: discountAmount,
+        discount_type: discountType,
+        items: cart.map(item => ({
+            product_id: item.productId,
+            quantity: item.quantity,
+            unit_price: item.price
+        }))
+    };
+
+    fetch('/pos/process-sale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert('Sale completed!\nTransaction: ' + data.transaction_number + '\nTotal: KSh ' + data.total.toFixed(2) + '\nChange: KSh ' + data.change_given.toFixed(2));
+            window.print();
+            clearCart();
+        }
+    })
+    .catch(err => {
+        alert('Error processing sale: ' + err);
+    });
+}
+
+function showMpesaModal() {
+    const totalAmount = document.getElementById('total').textContent.replace('KSh ', '');
+    document.getElementById('mpesa-amount').textContent = totalAmount;
+    document.getElementById('mpesa-modal').style.display = 'flex';
+    document.getElementById('mpesa-phone').focus();
+}
+
+function closeMpesaModal() {
+    document.getElementById('mpesa-modal').style.display = 'none';
+    document.getElementById('mpesa-phone').value = '';
+}
+
+function initiateMpesaPayment() {
+    const phoneNumber = document.getElementById('mpesa-phone').value.trim();
+    const totalAmount = parseFloat(document.getElementById('total').textContent.replace('KSh ', ''));
+
+    if (!phoneNumber || !phoneNumber.match(/^254[0-9]{9}$/)) {
+        alert('Please enter a valid M-Pesa phone number (format: 254XXXXXXXXX)');
+        return;
+    }
+
+    if (totalAmount <= 0) {
+        alert('Invalid payment amount');
+        return;
+    }
+
+    // Disable button and show loading
+    const btn = document.getElementById('initiate-mpesa-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    const discountAmount = parseFloat(document.getElementById('discount-amount').value) || 0;
+    const discountType = document.getElementById('discount-type').value;
+
+    const data = {
+        customer_id: document.getElementById('customer-select').value,
+        payment_method: 'mpesa',
+        amount_paid: totalAmount,
+        discount_amount: discountAmount,
+        discount_type: discountType,
+        phone_number: phoneNumber,
+        items: cart.map(item => ({
+            product_id: item.productId,
+            quantity: item.quantity,
+            unit_price: item.price
+        }))
+    };
+
+    fetch('/payments/process/mpesa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('M-Pesa STK Push sent! Please check your phone and complete the payment. The system will automatically process the sale once payment is confirmed.');
+            closeMpesaModal();
+            // Optionally, you could poll for payment status or show a waiting screen
+            clearCart();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to initiate M-Pesa payment'));
+        }
+    })
+    .catch(err => {
+        alert('Error initiating M-Pesa payment: ' + err);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    });
+}
+</script>
+{% endblock %}

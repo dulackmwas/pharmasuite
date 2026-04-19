@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Thermal Printer Setup - PharmaSuite{% endblock %}
+{% block header %}Thermal Printer Setup{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Thermal Printer Configuration</div>
+
+    <div class="alert alert-info">
+        <strong>Thermal Printer Setup:</strong> Configure your thermal receipt printer for automatic printing of receipts.
+    </div>
+
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Printer Type</label>
+                <select name="printer_type" class="form-select">
+                    <option value="usb">USB Thermal Printer</option>
+                    <option value="network">Network Thermal Printer</option>
+                    <option value="bluetooth">Bluetooth Thermal Printer</option>
+                    <option value="serial">Serial Thermal Printer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Printer Model</label>
+                <select name="printer_model" class="form-select">
+                    <option value="generic">Generic Thermal Printer</option>
+                    <option value="epson">Epson TM Series</option>
+                    <option value="star">Star Micronics</option>
+                    <option value="custom">Custom Model</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Printer Connection</label>
+            <div id="connection-fields">
+                <!-- Dynamic fields will be loaded based on printer type -->
+                <div class="form-group">
+                    <label class="form-label">USB Port / IP Address</label>
+                    <input type="text" name="printer_address" class="form-input" placeholder="e.g., /dev/usb/lp0 or 192.168.1.100">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Paper Width</label>
+            <select name="paper_width" class="form-select">
+                <option value="58mm">58mm (Standard)</option>
+                <option value="80mm">80mm (Wide)</option>
+                <option value="110mm">110mm (Extra Wide)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="auto_print" checked>
+                Automatically print receipts after sale completion
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="print_customer_copy">
+                Print customer copy (duplicate receipt)
+            </label>
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Printer Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="testPrinter()">Test Print</button>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Printer Status & Testing</div>
+
+    <div class="grid-2">
+        <div>
+            <h4>Printer Status</h4>
+            <div id="printer-status" class="alert alert-warning">
+                <strong>Status:</strong> Not Configured
+            </div>
+        </div>
+
+        <div>
+            <h4>Test Functions</h4>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="testPrinter()">🖨️ Test Print</button>
+                <button class="btn btn-secondary" onclick="checkPaper()">📄 Check Paper</button>
+                <button class="btn btn-secondary" onclick="calibratePrinter()">⚙️ Calibrate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Thermal Printer Information</div>
+
+    <div class="alert alert-info">
+        <h4>Supported Printers:</h4>
+        <ul style="margin: 8px 0;">
+            <li>Epson TM Series (TM-88, TM-T88, TM-P80)</li>
+            <li>Star Micronics TSP Series</li>
+            <li>Generic ESC/POS compatible printers</li>
+            <li>Most USB, Network, and Bluetooth thermal printers</li>
+        </ul>
+
+        <h4>Requirements:</h4>
+        <ul style="margin: 8px 0;">
+            <li>58mm, 80mm, or 110mm thermal paper rolls</li>
+            <li>USB, Ethernet, or Bluetooth connection</li>
+            <li>ESC/POS command support</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+// Dynamic connection fields based on printer type
+document.querySelector('select[name="printer_type"]').addEventListener('change', function() {
+    const type = this.value;
+    const fieldsContainer = document.getElementById('connection-fields');
+
+    let fields = '';
+
+    switch(type) {
+        case 'usb':
+            fields = `
+                <div class="form-group">
+                    <label class="form-label">USB Device Path</label>
+                    <input type="text" name="printer_address" class="form-input" placeholder="/dev/usb/lp0 (Linux) or COM1 (Windows)">
+                </div>
+            `;
+            break;
+        case 'network':
+            fields = `
+                <div class="form-group">
+                    <label class="form-label">IP Address</label>
+                    <input type="text" name="printer_address" class="form-input" placeholder="192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Port</label>
+                    <input type="number" name="printer_port" class="form-input" value="9100" placeholder="9100">
+                </div>
+            `;
+            break;
+        case 'bluetooth':
+            fields = `
+                <div class="form-group">
+                    <label class="form-label">Bluetooth MAC Address</label>
+                    <input type="text" name="printer_address" class="form-input" placeholder="AA:BB:CC:DD:EE:FF">
+                </div>
+            `;
+            break;
+        case 'serial':
+            fields = `
+                <div class="form-group">
+                    <label class="form-label">Serial Port</label>
+                    <input type="text" name="printer_address" class="form-input" placeholder="COM1 (Windows) or /dev/ttyUSB0 (Linux)">
+                </div>
+                <div class="grid-2" style="margin-top: 12px;">
+                    <div class="form-group">
+                        <label class="form-label">Baud Rate</label>
+                        <select name="baud_rate" class="form-select">
+                            <option value="9600">9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400">38400</option>
+                            <option value="115200" selected>115200</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data Bits</label>
+                        <select name="data_bits" class="form-select">
+                            <option value="8" selected>8</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+
+    fieldsContainer.innerHTML = fields;
+});
+
+// Trigger initial field update
+document.querySelector('select[name="printer_type"]').dispatchEvent(new Event('change'));
+
+function testPrinter() {
+    alert('Test print functionality would send a test receipt to the configured printer.\n\nThis feature requires server-side printer integration.');
+}
+
+function checkPaper() {
+    alert('Paper check functionality would query the printer for paper status.\n\nThis requires direct printer communication.');
+}
+
+function calibratePrinter() {
+    alert('Printer calibration would adjust print alignment and settings.\n\nThis requires ESC/POS command support.');
+}
+</script>
+{% endblock %}

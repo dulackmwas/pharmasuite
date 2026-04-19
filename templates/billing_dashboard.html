@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Billing Dashboard - PharmaSuite{% endblock %}
+{% block header %}Billing Dashboard{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Overdue Invoices</div>
+        <div class="stat-value">{{ overdue_invoices|length }}</div>
+        <div class="stat-change">KSh {{ "%.2f"|format(total_outstanding) }} outstanding</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Credit Customers</div>
+        <div class="stat-value">{{ credit_customers|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Credit Used</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(total_credit_used) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Recent Payments</div>
+        <div class="stat-value">{{ recent_payments|length }}</div>
+        <div class="stat-change">This week</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            Overdue Invoices
+            <a href="{{ url_for('invoices') }}" class="btn btn-secondary">View All</a>
+        </div>
+        {% if overdue_invoices %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in overdue_invoices[:10] %}
+                <tr>
+                    <td><a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                    <td>{{ invoice.customer.name }}</td>
+                    <td><span class="badge badge-error">{{ invoice.due_date }}</span></td>
+                    <td>KSh {{ "%.2f"|format(invoice.total) }}</td>
+                    <td><strong>KSh {{ "%.2f"|format(invoice.get_balance_due()) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No overdue invoices</div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Recent Invoices
+            <a href="{{ url_for('invoices') }}" class="btn btn-secondary">View All</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in recent_invoices %}
+                <tr>
+                    <td><a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                    <td>{{ invoice.customer.name }}</td>
+                    <td>{{ invoice.created_at.strftime('%m/%d/%Y') }}</td>
+                    <td>KSh {{ "%.2f"|format(invoice.total) }}</td>
+                    <td>
+                        <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}error{% else %}warning{% endif %}">
+                            {{ invoice.status.title() }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            Recent Payments
+            <a href="{{ url_for('payments') }}" class="btn btn-secondary">View All</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Payment #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.payment_number }}</td>
+                    <td>{{ payment.customer.name }}</td>
+                    <td>{{ payment.payment_date.strftime('%m/%d/%Y') }}</td>
+                    <td><strong>KSh {{ "%.2f"|format(payment.amount) }}</strong></td>
+                    <td>{{ payment.payment_method.title() }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Credit Accounts
+            <a href="{{ url_for('customers') }}" class="btn btn-secondary">View All</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Credit Limit</th>
+                    <th>Current Balance</th>
+                    <th>Available Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in credit_customers %}
+                <tr>
+                    <td><a href="{{ url_for('customer_statement', customer_id=customer.id) }}">{{ customer.name }}</a></td>
+                    <td>KSh {{ "%.2f"|format(customer.credit_limit) }}</td>
+                    <td>KSh {{ "%.2f"|format(customer.current_balance) }}</td>
+                    <td>
+                        {% set available = customer.credit_limit - customer.current_balance %}
+                        <span class="badge badge-{% if available > 0 %}success{% else %}error{% endif %}">
+                            KSh {{ "%.2f"|format(available) }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Quick Actions</div>
+    <div class="flex flex-gap">
+        <a href="{{ url_for('invoices_create') }}" class="btn btn-primary">Create Invoice</a>
+        <a href="{{ url_for('payments_record') }}" class="btn btn-success">Record Payment</a>
+        <a href="{{ url_for('customers_add') }}" class="btn btn-secondary">Add Credit Customer</a>
+        <a href="{{ url_for('tax_rates') }}" class="btn btn-secondary">Manage Tax Rates</a>
+    </div>
+</div>
+{% endblock %}

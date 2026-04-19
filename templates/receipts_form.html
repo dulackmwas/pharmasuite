@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}{% if template %}Edit{% else %}Create{% endif %} Receipt Template - PharmaSuite{% endblock %}
+{% block header %}{% if template %}Edit{% else %}Create{% endif %} Receipt Template{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>{% if template %}Edit{% else %}Create{% endif %} Receipt Template</span>
+            <a href="{{ url_for('receipts') }}" class="btn btn-secondary">Back to Templates</a>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Template Name *</label>
+                <input type="text" name="name" class="form-input" required
+                       value="{{ template.name if template else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Template Type</label>
+                <select name="template_type" class="form-select">
+                    <option value="digital" {% if template and template.template_type == 'digital' %}selected{% endif %}>Digital Receipt</option>
+                    <option value="thermal" {% if template and template.template_type == 'thermal' %}selected{% endif %}>Thermal Printer</option>
+                    <option value="email" {% if template and template.template_type == 'email' %}selected{% endif %}>Email Receipt</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Header Text</label>
+            <textarea name="header_text" class="form-input" rows="3" placeholder="Custom header text to appear at the top of receipts">{{ template.header_text if template else '' }}</textarea>
+            <small style="color: #64748b; font-size: 12px;">Optional custom text to display in the receipt header</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Footer Text</label>
+            <textarea name="footer_text" class="form-input" rows="3" placeholder="Custom footer text to appear at the bottom of receipts">{{ template.footer_text if template else '' }}</textarea>
+            <small style="color: #64748b; font-size: 12px;">Optional custom text to display in the receipt footer</small>
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; margin-bottom: 12px;">
+                <strong>Display Options:</strong>
+            </label>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="show_logo" {% if not template or template.show_logo %}checked{% endif %}>
+                    <span>Show Store Logo</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="show_store_info" {% if not template or template.show_store_info %}checked{% endif %}>
+                    <span>Show Store Info</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="show_terms" {% if not template or template.show_terms %}checked{% endif %}>
+                    <span>Show Terms</span>
+                </label>
+
+                {% if not template or not template.is_default %}
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="is_default">
+                    <span>Set as Default</span>
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Custom CSS</label>
+            <textarea name="custom_css" class="form-input" rows="4" placeholder="Additional CSS for custom styling" style="font-family: monospace; font-size: 12px;">{{ template.custom_css if template else '' }}</textarea>
+            <small style="color: #64748b; font-size: 12px;">Advanced: Add custom CSS for receipt styling</small>
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Template</button>
+            <a href="{{ url_for('receipts') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Template Type Information</div>
+
+    <div class="grid-3">
+        <div style="padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">💻</div>
+            <h4>Digital Receipt</h4>
+            <p style="color: #64748b; font-size: 13px;">Standard web-based receipt for digital display and printing</p>
+        </div>
+
+        <div style="padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🖨️</div>
+            <h4>Thermal Printer</h4>
+            <p style="color: #64748b; font-size: 13px;">Optimized for thermal receipt printers with condensed layout</p>
+        </div>
+
+        <div style="padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">📧</div>
+            <h4>Email Receipt</h4>
+            <p style="color: #64748b; font-size: 13px;">Formatted for email delivery with HTML styling</p>
+        </div>
+    </div>
+</div>
+
+{% if template %}
+<div class="card mt-2">
+    <div class="card-header">Quick Preview</div>
+    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; margin: 16px;">
+        <div id="preview-content" style="font-family: monospace; font-size: 11px; line-height: 1.4;">
+            <!-- Preview will be loaded here -->
+        </div>
+    </div>
+    <div style="padding: 0 16px 16px;">
+        <button class="btn btn-secondary" onclick="loadPreview()">🔄 Refresh Preview</button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+{% if template %}
+function loadPreview() {
+    fetch(`/receipts/{{ template.id }}/preview`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('preview-content').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('preview-content').innerHTML = '<div style="color: #dc2626;">Error loading preview</div>';
+        });
+}
+
+// Load preview on page load
+document.addEventListener('DOMContentLoaded', loadPreview);
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Transaction {{ transaction.transaction_number }} - PharmaSuite{% endblock %}
+{% block header %}Transaction {{ transaction.transaction_number }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div style="display: flex; justify-content: space-between;">
+            <span>Receipt</span>
+            <button onclick="window.print()" class="btn btn-secondary">Print</button>
+        </div>
+    </div>
+    
+    <div class="text-center mb-2">
+        <h3>PharmaSuite Pharmacy</h3>
+        <p class="text-muted">{{ transaction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+    
+    <hr style="margin: 16px 0;">
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in transaction.items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>KSh {{ "%.2f"|format(item.unit_price) }}</td>
+                <td>KSh {{ "%.2f"|format(item.line_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <hr style="margin: 16px 0;">
+    
+    <div style="text-align: right;">
+        <p>Subtotal: KSh {{ "%.2f"|format(transaction.subtotal) }}</p>
+        <p>Tax (8%): KSh {{ "%.2f"|format(transaction.tax_amount) }}</p>
+        <p>Discount: KSh {{ "%.2f"|format(transaction.discount_amount) }}</p>
+        <p style="font-size: 18px; font-weight: 600;">Total: KSh {{ "%.2f"|format(transaction.total) }}</p>
+    </div>
+    
+    <hr style="margin: 16px 0;">
+    
+    <div class="grid-2">
+        <div>
+            <p><strong>Payment Method:</strong> {{ transaction.payment_method }}</p>
+            <p><strong>Amount Paid:</strong> KSh {{ "%.2f"|format(transaction.amount_paid) }}</p>
+            <p><strong>Change:</strong> KSh {{ "%.2f"|format(transaction.change_given) }}</p>
+        </div>
+        <div>
+            <p><strong>Customer:</strong> {{ transaction.customer.name if transaction.customer else 'Walk-in' }}</p>
+            <p><strong>Cashier:</strong> {{ transaction.user.name if transaction.user else '-' }}</p>
+        </div>
+    </div>
+    
+    <div class="mt-2">
+        <a href="{{ url_for('transactions') }}" class="btn btn-secondary">Back to Transactions</a>
+    </div>
+</div>
+{% endblock %}

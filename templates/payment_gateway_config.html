@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Configure {{ gateway.display_name }} - PharmaSuite{% endblock %}
+{% block header %}Configure {{ gateway.display_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>{{ gateway.display_name }} Configuration</span>
+            <a href="{{ url_for('payment_gateways') }}" class="btn btn-secondary">Back to Gateways</a>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_active" {% if gateway.is_active %}checked{% endif %}>
+                Gateway Active
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_test_mode" {% if gateway.is_test_mode %}checked{% endif %}>
+                Test Mode (Use sandbox/test credentials)
+            </label>
+        </div>
+
+        {% set config = gateway.get_config() %}
+
+        {% if gateway.name == 'mpesa' %}
+        <h4 class="mt-2 mb-1">M-Pesa Configuration</h4>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Consumer Key *</label>
+                <input type="text" name="config_consumer_key" class="form-input" value="{{ config.get('consumer_key', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Consumer Secret *</label>
+                <input type="password" name="config_consumer_secret" class="form-input" value="{{ config.get('consumer_secret', '') }}" required>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Shortcode *</label>
+                <input type="text" name="config_shortcode" class="form-input" value="{{ config.get('shortcode', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Passkey *</label>
+                <input type="text" name="config_passkey" class="form-input" value="{{ config.get('passkey', '') }}" required>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Base URL *</label>
+                <input type="url" name="config_base_url" class="form-input" value="{{ config.get('base_url', 'https://sandbox.safaricom.co.ke') }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Callback URL</label>
+                <input type="url" name="config_callback_url" class="form-input" value="{{ config.get('callback_url', url_for('webhook_mpesa', _external=True)) }}">
+            </div>
+        </div>
+
+        {% elif gateway.name == 'stripe' %}
+        <h4 class="mt-2 mb-1">Stripe Configuration</h4>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Publishable Key *</label>
+                <input type="text" name="config_publishable_key" class="form-input" value="{{ config.get('publishable_key', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Secret Key *</label>
+                <input type="password" name="config_secret_key" class="form-input" value="{{ config.get('secret_key', '') }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Webhook Secret</label>
+            <input type="text" name="config_webhook_secret" class="form-input" value="{{ config.get('webhook_secret', '') }}">
+            <small class="text-muted">Required for webhook verification</small>
+        </div>
+
+        {% elif gateway.name == 'paypal' %}
+        <h4 class="mt-2 mb-1">PayPal Configuration</h4>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Client ID *</label>
+                <input type="text" name="config_client_id" class="form-input" value="{{ config.get('client_id', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Client Secret *</label>
+                <input type="password" name="config_client_secret" class="form-input" value="{{ config.get('client_secret', '') }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Base URL *</label>
+            <input type="url" name="config_base_url" class="form-input" value="{{ config.get('base_url', 'https://api-m.sandbox.paypal.com') }}" required>
+        </div>
+
+        {% elif gateway.name == 'bank_transfer' %}
+        <h4 class="mt-2 mb-1">Bank Transfer Configuration</h4>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Bank Name</label>
+                <input type="text" name="config_bank_name" class="form-input" value="{{ config.get('bank_name', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Account Name</label>
+                <input type="text" name="config_account_name" class="form-input" value="{{ config.get('account_name', '') }}">
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Account Number</label>
+                <input type="text" name="config_account_number" class="form-input" value="{{ config.get('account_number', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Routing Number</label>
+                <input type="text" name="config_routing_number" class="form-input" value="{{ config.get('routing_number', '') }}">
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">SWIFT Code</label>
+                <input type="text" name="config_swift_code" class="form-input" value="{{ config.get('swift_code', '') }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Currency</label>
+                <input type="text" name="config_currency" class="form-input" value="{{ config.get('currency', 'USD') }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Payment Instructions</label>
+            <textarea name="config_instructions" class="form-input" rows="3">{{ config.get('instructions', '') }}</textarea>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+            <a href="{{ url_for('payment_gateways') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Configuration Notes</div>
+    <div class="alert alert-info">
+        {% if gateway.name == 'mpesa' %}
+        <p><strong>M-Pesa Setup:</strong> Obtain credentials from Safaricom Daraja portal. Use sandbox for testing.</p>
+        {% elif gateway.name == 'stripe' %}
+        <p><strong>Stripe Setup:</strong> Get API keys from Stripe Dashboard. Set webhook endpoint to handle payment confirmations.</p>
+        {% elif gateway.name == 'paypal' %}
+        <p><strong>PayPal Setup:</strong> Create app in PayPal Developer Console and get client credentials.</p>
+        {% else %}
+        <p><strong>Bank Transfer:</strong> Configure your bank account details for customer transfer instructions.</p>
+        {% endif %}
+        <p><strong>Security:</strong> Never share secret keys or commit them to version control. Use environment variables in production.</p>
+    </div>
+</div>
+{% endblock %}

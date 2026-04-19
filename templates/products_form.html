@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}Edit Product{% else %}Add Product{% endif %} - PharmaSuite{% endblock %}
+{% block header %}{% if product %}Edit Product{% else %}Add Product{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input type="text" name="sku" class="form-input" value="{{ product.sku if product else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Barcode</label>
+                <input type="text" name="barcode" class="form-input" value="{{ product.barcode if product else '' }}">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" name="name" class="form-input" required value="{{ product.name if product else '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-input" rows="3">{{ product.description if product else '' }}</textarea>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select name="category_id" class="form-select">
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Supplier</label>
+                <select name="supplier_id" class="form-select">
+                    <option value="">Select Supplier</option>
+                    {% for sup in suppliers %}
+                    <option value="{{ sup.id }}" {% if product and product.supplier_id == sup.id %}selected{% endif %}>{{ sup.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Unit Price</label>
+                <input type="number" name="unit_price" class="form-input" step="0.01" value="{{ product.unit_price if product else '0' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cost Price</label>
+                <input type="number" name="cost_price" class="form-input" step="0.01" value="{{ product.cost_price if product else '0' }}">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" name="reorder_level" class="form-input" value="{{ product.reorder_level if product else '10' }}">
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_controlled" {% if product and product.is_controlled %}checked{% endif %}>
+                Controlled Substance
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="requires_prescription" {% if product and product.requires_prescription %}checked{% endif %}>
+                Requires Prescription
+            </label>
+        </div>
+        
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Product</button>
+            <a href="{{ url_for('products') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

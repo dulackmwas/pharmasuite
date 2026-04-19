@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Payment Reconciliation - PharmaSuite{% endblock %}
+{% block header %}Payment Reconciliation{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Reconciliation Reports</span>
+            <button class="btn btn-primary" onclick="runReconciliation()">Run Reconciliation</button>
+        </div>
+    </div>
+
+    <div class="search-bar" style="margin-bottom: 16px;">
+        <form method="GET">
+            <input type="date" name="start_date" class="form-input" style="width: 150px;" value="{{ request.args.get('start_date', (date.today() - timedelta(days=7)).strftime('%Y-%m-%d')) }}">
+            <input type="date" name="end_date" class="form-input" style="width: 150px;" value="{{ request.args.get('end_date', date.today().strftime('%Y-%m-%d')) }}">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Gateway</th>
+                <th>Status</th>
+                <th>Total Transactions</th>
+                <th>Total Amount</th>
+                <th>Reconciled</th>
+                <th>Discrepancies</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reconciliation in reconciliations %}
+            <tr>
+                <td>{{ reconciliation.reconciliation_date.strftime('%m/%d/%Y') }}</td>
+                <td>{{ reconciliation.gateway.display_name if reconciliation.gateway else 'Unknown' }}</td>
+                <td>
+                    <span class="badge badge-{% if reconciliation.status == 'completed' %}success{% elif reconciliation.status == 'in_progress' %}warning{% else %}error{% endif %}">
+                        {{ reconciliation.status.title() }}
+                    </span>
+                </td>
+                <td>{{ reconciliation.total_transactions }}</td>
+                <td>KSh {{ "%.2f"|format(reconciliation.total_amount) }}</td>
+                <td>
+                    {{ reconciliation.reconciled_transactions }} /
+                    KSh {{ "%.2f"|format(reconciliation.reconciled_amount) }}
+                </td>
+                <td>
+                    {% if reconciliation.discrepancies_found > 0 %}
+                        <span class="badge badge-error">
+                            {{ reconciliation.discrepancies_found }} (KSh {{ "%.2f"|format(reconciliation.discrepancy_amount) }})
+                        </span>
+                    {% else %}
+                        <span class="badge badge-success">None</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('reconciliation_view', reconciliation_id=reconciliation.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View Report</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('reconciliation', page=p) }}" class="pagination-item {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Run Reconciliation Modal -->
+<div id="reconciliation-modal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Run Reconciliation</h3>
+            <span class="modal-close" onclick="closeReconciliationModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('reconciliation_run') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Payment Gateway</label>
+                    <select name="gateway_name" class="form-select" required>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="stripe">Stripe</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" name="start_date" class="form-input" value="{{ (date.today() - timedelta(days=1)).strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="end_date" class="form-input" value="{{ date.today().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Run Reconciliation</button>
+                <button type="button" class="btn btn-secondary" onclick="closeReconciliationModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function runReconciliation() {
+    document.getElementById('reconciliation-modal').style.display = 'flex';
+}
+
+function closeReconciliationModal() {
+    document.getElementById('reconciliation-modal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('reconciliation-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeReconciliationModal();
+    }
+});
+</script>
+{% endblock %}

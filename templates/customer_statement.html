@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Customer Statement - PharmaSuite{% endblock %}
+{% block header %}
+<div style="display: flex; align-items: center; gap: 12px;">
+    <a href="{{ url_for('customers_view', customer_id=statement.customer.id) }}" style="color: #1e3a8a; text-decoration: none; font-size: 20px;">⬅️</a>
+    <span>Customer Statement - {{ statement.customer.name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Account Statement</span>
+            <div>
+                <button onclick="window.print()" class="btn btn-primary">Print Statement</button>
+                <a href="{{ url_for('customers_view', customer_id=statement.customer.id) }}" class="btn btn-secondary">
+                    <span style="font-size: 16px; margin-right: 6px;">⬅️</span>
+                    Back to Customer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2 mb-2">
+        <div>
+            <h4>{{ statement.customer.name }}</h4>
+            <p>{{ statement.customer.address or 'No address provided' }}</p>
+            <p>{{ statement.customer.phone or '' }}</p>
+            <p>{{ statement.customer.email or '' }}</p>
+        </div>
+        <div class="text-right">
+            <h4>Statement Period</h4>
+            <p>Generated: {{ statement.statement_items[0].date if statement.statement_items else 'N/A' }}</p>
+            <p>Current Balance: <strong>KSh {{ "%.2f"|format(statement.current_balance) }}</strong></p>
+            <p>Credit Limit: KSh {{ "%.2f"|format(statement.customer.credit_limit) }}</p>
+            <p>Available Credit: KSh {{ "%.2f"|format(statement.customer.credit_limit - statement.current_balance) }}</p>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Reference</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in statement.statement_items %}
+            <tr>
+                <td>{{ item.date.strftime('%m/%d/%Y') }}</td>
+                <td>
+                    <span class="badge badge-{% if item.type == 'invoice' %}error{% elif item.type == 'payment' %}success{% else %}info{% endif %}">
+                        {{ item.type.title() }}
+                    </span>
+                </td>
+                <td>{{ item.reference or '-' }}</td>
+                <td>{{ item.description }}</td>
+                <td class="{% if item.amount < 0 %}text-success{% else %}text-error{% endif %}">
+                    {% if item.amount < 0 %}
+                        KSh {{ "%.2f"|format(item.amount) }}
+                    {% else %}
+                        KSh {{ "%.2f"|format(item.amount) }}
+                    {% endif %}
+                </td>
+                <td><strong>KSh {{ "%.2f"|format(item.balance) }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="text-right mt-2">
+        <hr style="margin: 16px 0;">
+        <p style="font-size: 18px; font-weight: 600;">
+            Current Balance: KSh {{ "%.2f"|format(statement.current_balance) }}
+        </p>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Outstanding Invoices</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+                <th>Balance Due</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in statement.customer.invoices %}
+            {% if invoice.status in ['unpaid', 'partial'] %}
+            <tr>
+                <td><a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                <td>{{ invoice.created_at.strftime('%m/%d/%Y') }}</td>
+                <td>{{ invoice.due_date or '-' }}</td>
+                <td>KSh {{ "%.2f"|format(invoice.total) }}</td>
+                <td>
+                    {% set balance = invoice.get_balance_due() %}
+                    {% if balance > 0 %}
+                        <strong class="text-error">KSh {{ "%.2f"|format(balance) }}</strong>
+                    {% else %}
+                        $0.00
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.is_overdue() %}error{% else %}warning{% endif %}">
+                        {% if invoice.is_overdue() %}Overdue{% else %}{{ invoice.status.title() }}{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View</a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+@media print {
+    .card-header .flex-between > div:last-child {
+        display: none;
+    }
+    .btn {
+        display: none;
+    }
+    body {
+        font-size: 12px;
+    }
+}
+</style>
+{% endblock %}

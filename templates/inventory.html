@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Inventory - PharmaSuite{% endblock %}
+{% block header %}Inventory{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Products</div>
+        <div class="stat-value">{{ summary.total_items }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Units</div>
+        <div class="stat-value">{{ summary.total_units }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Inventory Value</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(summary.total_value) }}</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Add Stock</div>
+        <form method="POST" action="{{ url_for('inventory_add_stock') }}">
+            <div class="form-group">
+                <label class="form-label">Product</label>
+                <select name="product_id" class="form-select" required>
+                    <option value="">Select Product</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" name="quantity" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Batch Number</label>
+                    <input type="text" name="batch_number" class="form-input">
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Cost per Unit</label>
+                    <input type="number" name="cost_per_unit" class="form-input" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expiry Date</label>
+                    <input type="date" name="expiry_date" class="form-input">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input type="text" name="location" class="form-input" placeholder="e.g., Shelf A1">
+            </div>
+            <button type="submit" class="btn btn-primary">Add Stock</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Current Stock</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Stock</th>
+                    <th>Reorder Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>
+                        {% if p.get_total_stock() <= p.reorder_level %}
+                        <span class="badge badge-error">{{ p.get_total_stock() }}</span>
+                        {% else %}
+                        <span class="badge badge-success">{{ p.get_total_stock() }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.reorder_level }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

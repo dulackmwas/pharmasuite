@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Users - PharmaSuite{% endblock %}
+{% block header %}User Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>User List</span>
+            <a href="{{ url_for('users_add') }}" class="btn btn-primary">Add User</a>
+        </div>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name or '-' }}</td>
+                <td>{{ user.email or '-' }}</td>
+                <td>
+                    <span class="badge badge-{% if user.role.name == 'admin' %}error{% elif user.role.name == 'pharmacist' %}info{% elif user.role.name == 'cashier' %}success{% else %}warning{% endif %}">
+                        {{ user.role.display_name or user.role.name }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge badge-{% if user.is_active %}success{% else %}error{% endif %}">
+                        {{ 'Active' if user.is_active else 'Inactive' }}
+                    </span>
+                </td>
+                <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('users_edit', user_id=user.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">Edit</a>
+                    <form method="POST" action="{{ url_for('users_toggle', user_id=user.id) }}" style="display: inline;">
+                        <button type="submit" class="btn {% if user.is_active %}btn-danger{% else %}btn-success{% endif %}" style="padding: 4px 8px;">
+                            {{ 'Deactivate' if user.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

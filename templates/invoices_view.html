@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }} - PharmaSuite{% endblock %}
+{% block header %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Invoice Details</span>
+            <div>
+                <a href="{{ url_for('invoices_pdf', invoice_id=invoice.id) }}" class="btn btn-primary">Download PDF</a>
+                <a href="{{ url_for('invoices') }}" class="btn btn-secondary">Back to Invoices</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2 mb-2">
+        <div>
+            <h4>Bill To:</h4>
+            <p><strong>{{ invoice.customer.name }}</strong></p>
+            <p>{{ invoice.customer.address or 'No address provided' }}</p>
+            <p>{{ invoice.customer.phone or '' }}</p>
+            <p>{{ invoice.customer.email or '' }}</p>
+        </div>
+        <div class="text-right">
+            <h4>Invoice Information:</h4>
+            <p><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+            <p><strong>Date:</strong> {{ invoice.created_at.strftime('%B %d, %Y') }}</p>
+            <p><strong>Due Date:</strong> {{ invoice.due_date or 'N/A' }}</p>
+            <p><strong>Terms:</strong> {{ invoice.terms or 'N/A' }}</p>
+            <p><strong>Status:</strong>
+                <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' or invoice.is_overdue() %}error{% elif invoice.status == 'partial' %}warning{% else %}info{% endif %}">
+                    {% if invoice.is_overdue() and invoice.status != 'paid' %}Overdue{% else %}{{ invoice.status.title() }}{% endif %}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Discount</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>KSh {{ "%.2f"|format(item.unit_price) }}</td>
+                <td>KSh {{ "%.2f"|format(item.discount) }}</td>
+                <td>KSh {{ "%.2f"|format(item.line_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="text-right">
+        <hr style="margin: 16px 0;">
+        <p><strong>Subtotal:</strong> KSh {{ "%.2f"|format(invoice.subtotal) }}</p>
+        <p><strong>Discount:</strong> KSh {{ "%.2f"|format(invoice.discount_amount) }}</p>
+        <p><strong>Tax:</strong> KSh {{ "%.2f"|format(invoice.tax_amount) }}</p>
+        <p style="font-size: 18px; font-weight: 600;"><strong>Total:</strong> KSh {{ "%.2f"|format(invoice.total) }}</p>
+    </div>
+</div>
+
+{% if invoice.payments %}
+<div class="card mt-2">
+    <div class="card-header">Payment History</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Payment #</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in invoice.payments %}
+            <tr>
+                <td>{{ payment.payment_number }}</td>
+                <td>{{ payment.payment_date.strftime('%m/%d/%Y') }}</td>
+                <td>KSh {{ "%.2f"|format(payment.amount) }}</td>
+                <td>{{ payment.payment_method.title() }}</td>
+                <td>{{ payment.reference_number or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% set balance_due = invoice.get_balance_due() %}
+{% if balance_due > 0 %}
+<div class="card mt-2">
+    <div class="card-header">Record Payment</div>
+    <form method="POST" action="{{ url_for('invoices_payment', invoice_id=invoice.id) }}">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Payment Amount *</label>
+                <input type="number" name="amount" class="form-input" step="0.01" required value="{{ "%.2f"|format(balance_due) }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Payment Method</label>
+                <select name="payment_method" class="form-select" required>
+                    <option value="cash">Cash</option>
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="check">Check</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="credit">Credit Account</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Reference Number (Check #, Transaction ID, etc.)</label>
+            <input type="text" name="reference_number" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-input" rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Record Payment</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card mt-2">
+    <div class="card-header">Customer Information</div>
+    <div class="grid-2">
+        <div>
+            <p><strong>Credit Limit:</strong> KSh {{ "%.2f"|format(invoice.customer.credit_limit) }}</p>
+            <p><strong>Current Balance:</strong> KSh {{ "%.2f"|format(invoice.customer.current_balance) }}</p>
+            <p><strong>Available Credit:</strong> KSh {{ "%.2f"|format(invoice.customer.credit_limit - invoice.customer.current_balance) }}</p>
+        </div>
+        <div>
+            <p><strong>Payment Terms:</strong> {{ invoice.customer.payment_terms.title() }}</p>
+            <p><strong>Loyalty Points:</strong> {{ invoice.customer.loyalty_points }}</p>
+        </div>
+    </div>
+    <div class="mt-2">
+        <a href="{{ url_for('customer_statement', customer_id=invoice.customer.id) }}" class="btn btn-primary">View Customer Statement</a>
+        <a href="{{ url_for('customers_view', customer_id=invoice.customer.id) }}" class="btn btn-secondary">View Customer Details</a>
+    </div>
+</div>
+{% endblock %}

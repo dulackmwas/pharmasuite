@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Customers - PharmaSuite{% endblock %}
+{% block header %}Customers{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <form method="GET" class="search-bar" style="margin-bottom: 0;">
+                <input type="text" name="search" class="form-input" placeholder="Search customers..." value="{{ search }}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+            <a href="{{ url_for('customers_add') }}" class="btn btn-success">
+                <span style="font-size: 16px; margin-right: 6px;">+</span>
+                Add Customer
+            </a>
+        </div>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Loyalty Points</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('customers_view', customer_id=customer.id) }}">{{ customer.name }}</a>
+                </td>
+                <td>{{ customer.phone or '-' }}</td>
+                <td>{{ customer.email or '-' }}</td>
+                <td>{{ customer.loyalty_points }}</td>
+                <td>
+                    <a href="{{ url_for('customers_view', customer_id=customer.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View</a>
+                    <a href="{{ url_for('customers_edit', customer_id=customer.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="pagination">
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('customers', page=p, search=search) }}" class="pagination-item {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Add Prescription - PharmaSuite{% endblock %}
+{% block header %}Add Prescription{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">Customer *</label>
+            <select name="customer_id" class="form-select" required>
+                <option value="">Select Customer</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Prescriber Name</label>
+                <input type="text" name="prescriber_name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Prescriber License</label>
+                <input type="text" name="prescriber_license" class="form-input">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Drug Name *</label>
+            <input type="text" name="drug_name" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">NDC Code</label>
+            <input type="text" name="drug_ndc" class="form-input">
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="quantity" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dosage</label>
+                <input type="text" name="dosage" class="form-input" placeholder="e.g., 10mg twice daily">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Instructions</label>
+            <textarea name="instructions" class="form-input" rows="3"></textarea>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Refills Allowed</label>
+                <input type="number" name="refills_allowed" class="form-input" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date Issued</label>
+                <input type="date" name="date_issued" class="form-input">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Expiry Date</label>
+            <input type="date" name="expiry_date" class="form-input">
+        </div>
+        
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Prescription</button>
+            <a href="{{ url_for('prescriptions') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

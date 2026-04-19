@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{% if customer %}Edit Customer{% else %}Add Customer{% endif %}{% endblock %}
+{% block header %}{% if customer %}Edit Customer{% else %}Add Customer{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">Customer Name *</label>
+            <input type="text" name="name" class="form-input" required value="{{ customer.name if customer else '' }}">
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="text" name="phone" class="form-input" value="{{ customer.phone if customer else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" value="{{ customer.email if customer else '' }}">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" name="dob" class="form-input" value="{{ customer.dob if customer else '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Address</label>
+            <textarea name="address" class="form-input" rows="2">{{ customer.address if customer else '' }}</textarea>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Insurance Provider</label>
+                <input type="text" name="insurance_provider" class="form-input" value="{{ customer.insurance_provider if customer else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Insurance ID</label>
+                <input type="text" name="insurance_id" class="form-input" value="{{ customer.insurance_id if customer else '' }}">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Allergies</label>
+            <textarea name="allergy_notes" class="form-input" rows="2" placeholder="List any allergies...">{{ customer.allergy_notes if customer else '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Medical Conditions</label>
+            <textarea name="medical_conditions" class="form-input" rows="2" placeholder="List any medical conditions...">{{ customer.medical_conditions if customer else '' }}</textarea>
+        </div>
+
+        <h4 class="mt-2 mb-1">Credit & Billing Information</h4>
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Credit Limit</label>
+                <input type="number" name="credit_limit" class="form-input" step="0.01" value="{{ customer.credit_limit if customer else '0' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Payment Terms</label>
+                <select name="payment_terms" class="form-select">
+                    <option value="cash" {% if customer and customer.payment_terms == 'cash' %}selected{% endif %}>Cash on Delivery</option>
+                    <option value="net_15" {% if customer and customer.payment_terms == 'net_15' %}selected{% endif %}>Net 15 Days</option>
+                    <option value="net_30" {% if customer and customer.payment_terms == 'net_30' %}selected{% endif %}>Net 30 Days</option>
+                    <option value="net_60" {% if customer and customer.payment_terms == 'net_60' %}selected{% endif %}>Net 60 Days</option>
+                    <option value="net_90" {% if customer and customer.payment_terms == 'net_90' %}selected{% endif %}>Net 90 Days</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Billing Address</label>
+            <textarea name="billing_address" class="form-input" rows="2" placeholder="Billing address if different from main address">{{ customer.billing_address if customer else '' }}</textarea>
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Customer</button>
+            <a href="{{ url_for('customers') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

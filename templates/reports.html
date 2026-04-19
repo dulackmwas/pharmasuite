@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Reports - PharmaSuite{% endblock %}
+{% block header %}Reports{% endblock %}
+
+{% block content %}
+<div class="card mb-2">
+    <div class="card-header">
+        <form method="GET" class="search-bar" style="margin-bottom: 0;">
+            <input type="date" name="date" class="form-input" style="width: 150px;" value="{{ report.report_date }}">
+            <button type="submit" class="btn btn-primary">View Report</button>
+        </form>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value">{{ report.total_sales }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(report.total_revenue) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Tax</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(report.total_tax) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Discount</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(report.total_discount) }}</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Payment Methods</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for method, amount in report.payment_methods.items() %}
+                <tr>
+                    <td>{{ method }}</td>
+                    <td>KSh {{ "%.2f"|format(amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Top Selling Items</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product, data in report.items_sold.items() %}
+                <tr>
+                    <td>{{ product }}</td>
+                    <td>{{ data.quantity }}</td>
+                    <td>KSh {{ "%.2f"|format(data.total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <a href="{{ url_for('reports_inventory') }}" class="btn btn-primary">View Inventory Report</a>
+</div>
+{% endblock %}

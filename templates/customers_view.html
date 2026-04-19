@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} - PharmaSuite{% endblock %}
+{% block header %}{{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Customer Information</div>
+        <p><strong>Phone:</strong> {{ customer.phone or '-' }}</p>
+        <p><strong>Email:</strong> {{ customer.email or '-' }}</p>
+        <p><strong>Date of Birth:</strong> {{ customer.dob or '-' }}</p>
+        <p><strong>Loyalty Points:</strong> {{ customer.loyalty_points }}</p>
+        
+        <h4 class="mt-2 mb-1">Insurance</h4>
+        <p><strong>Provider:</strong> {{ customer.insurance_provider or '-' }}</p>
+        <p><strong>ID:</strong> {{ customer.insurance_id or '-' }}</p>
+        
+        <h4 class="mt-2 mb-1">Medical Information</h4>
+        <p><strong>Allergies:</strong> {{ customer.allergy_notes or 'None' }}</p>
+        <p><strong>Conditions:</strong> {{ customer.medical_conditions or 'None' }}</p>
+        
+        <div class="mt-2">
+            <a href="{{ url_for('customers_edit', customer_id=customer.id) }}" class="btn btn-secondary">Edit</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Prescriptions</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Drug</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rx in prescriptions %}
+                <tr>
+                    <td>{{ rx.drug_name }}</td>
+                    <td>{{ rx.quantity }}</td>
+                    <td><span class="badge badge-{% if rx.status == 'pending' %}warning{% elif rx.status == 'ready' %}info{% elif rx.status == 'picked_up' %}success{% else %}error{% endif %}">{{ rx.status }}</span></td>
+                    <td>{{ rx.created_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% endfor %}
+                {% if not prescriptions %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No prescriptions</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Transaction History</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Transaction #</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Payment Method</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td>{{ txn.transaction_number }}</td>
+                <td>{{ txn.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>KSh {{ "%.2f"|format(txn.total) }}</td>
+                <td>{{ txn.payment_method }}</td>
+                <td><a href="{{ url_for('transactions_view', transaction_id=txn.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View</a></td>
+            </tr>
+            {% endfor %}
+            {% if not transactions %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">No transactions</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

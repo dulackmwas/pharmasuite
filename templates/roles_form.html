@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{% if role %}Edit Role{% else %}Add Role{% endif %}{% endblock %}
+{% block header %}{% if role %}Edit Role{% else %}Add Role{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">Role Code *</label>
+            <input type="text" name="name" class="form-input" required value="{{ role.name if role else '' }}" placeholder="e.g., pharmacist" {% if role and role.is_system_role %}disabled{% endif %}>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Display Name</label>
+            <input type="text" name="display_name" class="form-input" value="{{ role.display_name if role else '' }}" placeholder="e.g., Pharmacist" {% if role and role.is_system_role %}disabled{% endif %}>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-input" rows="3" {% if role and role.is_system_role %}disabled{% endif %}>{{ role.description if role else '' }}</textarea>
+        </div>
+
+        {% if role and role.is_system_role %}
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_system_role" checked disabled> System Role (cannot be modified)
+            </label>
+        </div>
+        {% endif %}
+
+        <h4 class="mt-2 mb-1">Permissions</h4>
+        {% set categories = permissions|groupby('category') %}
+        {% for category, perms in categories %}
+        <div class="form-group">
+            <label class="form-label">{{ category|title }}</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                {% for perm in perms %}
+                <label style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid rgba(30, 58, 138, 0.2); border-radius: 6px; background: rgba(255, 255, 255, 0.5);">
+                    <input type="checkbox" name="permissions" value="{{ perm.id }}" {% if role and perm in role.permissions %}checked{% endif %}>
+                    <span>{{ perm.name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Role</button>
+            <a href="{{ url_for('roles') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

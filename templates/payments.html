@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Payments - PharmaSuite{% endblock %}
+{% block header %}Payment Records{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Payment History</span>
+            <a href="{{ url_for('payments_record') }}" class="btn btn-primary">Record Payment</a>
+        </div>
+    </div>
+
+    <div class="search-bar" style="margin-bottom: 16px;">
+        <form method="GET">
+            <select name="customer_id" class="form-select" style="width: 200px;" onchange="this.form.submit()">
+                <option value="">All Customers</option>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}" {% if request.args.get('customer_id') == customer.id|string %}selected{% endif %}>{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Payment #</th>
+                <th>Customer</th>
+                <th>Invoice</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.payment_number }}</td>
+                <td>{{ payment.customer.name }}</td>
+                <td>
+                    {% if payment.invoice %}
+                        <a href="{{ url_for('invoices_view', invoice_id=payment.invoice.id) }}">{{ payment.invoice.invoice_number }}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ payment.payment_date.strftime('%m/%d/%Y') }}</td>
+                <td><strong>KSh {{ "%.2f"|format(payment.amount) }}</strong></td>
+                <td>{{ payment.payment_method.title() }}</td>
+                <td>{{ payment.reference_number or '-' }}</td>
+                <td>
+                    <span class="badge badge-{% if payment.status == 'completed' %}success{% else %}warning{% endif %}">
+                        {{ payment.status.title() }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('payments', page=p, customer_id=request.args.get('customer_id')) }}" class="pagination-item {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

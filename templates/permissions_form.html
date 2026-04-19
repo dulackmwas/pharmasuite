@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% if permission %}Edit Permission{% else %}Add Permission{% endif %}{% endblock %}
+{% block header %}{% if permission %}Edit Permission{% else %}Add Permission{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Permission Name *</label>
+                <input type="text" name="name" class="form-input" required value="{{ permission.name if permission else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Permission Code *</label>
+                <input type="text" name="code" class="form-input" required value="{{ permission.code if permission else '' }}" placeholder="e.g., sales.create">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-select">
+                <option value="sales" {% if permission and permission.category == 'sales' %}selected{% endif %}>Sales</option>
+                <option value="inventory" {% if permission and permission.category == 'inventory' %}selected{% endif %}>Inventory</option>
+                <option value="customers" {% if permission and permission.category == 'customers' %}selected{% endif %}>Customers</option>
+                <option value="prescriptions" {% if permission and permission.category == 'prescriptions' %}selected{% endif %}>Prescriptions</option>
+                <option value="billing" {% if permission and permission.category == 'billing' %}selected{% endif %}>Billing</option>
+                <option value="reports" {% if permission and permission.category == 'reports' %}selected{% endif %}>Reports</option>
+                <option value="suppliers" {% if permission and permission.category == 'suppliers' %}selected{% endif %}>Suppliers</option>
+                <option value="administration" {% if permission and permission.category == 'administration' %}selected{% endif %}>Administration</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-input" rows="3">{{ permission.description if permission else '' }}</textarea>
+        </div>
+
+        {% if permission and permission.is_system_permission %}
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_system_permission" checked disabled> System Permission (cannot be modified)
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Permission</button>
+            <a href="{{ url_for('permissions') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

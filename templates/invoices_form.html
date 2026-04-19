@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Create Invoice - PharmaSuite{% endblock %}
+{% block header %}Create Invoice{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Create New Invoice</div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('transaction')">From Transaction</div>
+        <div class="tab" onclick="showTab('manual')">Manual Entry</div>
+    </div>
+
+    <!-- From Transaction Tab -->
+    <div id="transaction-tab" class="tab-content">
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Select Transaction *</label>
+                <select name="transaction_id" class="form-select" required>
+                    <option value="">Choose a transaction...</option>
+                    {% for transaction in transactions %}
+                    <option value="{{ transaction.id }}">
+                        {{ transaction.transaction_number }} - {{ transaction.customer.name }} - KSh {{ "%.2f"|format(transaction.total) }} ({{ transaction.created_at.strftime('%m/%d/%Y') }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Payment Terms (Days)</label>
+                    <select name="due_days" class="form-select">
+                        <option value="0">Due on Receipt</option>
+                        <option value="15">Net 15</option>
+                        <option value="30" selected>Net 30</option>
+                        <option value="60">Net 60</option>
+                        <option value="90">Net 90</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Invoice</button>
+        </form>
+    </div>
+
+    <!-- Manual Entry Tab -->
+    <div id="manual-tab" class="tab-content" style="display: none;">
+        <form method="POST" id="manual-form">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Customer *</label>
+                    <select name="customer_id" class="form-select" required>
+                        <option value="">Select Customer</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Terms (Days)</label>
+                    <select name="due_days" class="form-select">
+                        <option value="0">Due on Receipt</option>
+                        <option value="15">Net 15</option>
+                        <option value="30" selected>Net 30</option>
+                        <option value="60">Net 60</option>
+                        <option value="90">Net 90</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="items-container">
+                <h4>Invoice Items</h4>
+                <div class="item-row" data-index="0">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Description *</label>
+                            <input type="text" name="description_0" class="form-input" required>
+                        </div>
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label class="form-label">Qty</label>
+                                <input type="number" name="quantity_0" class="form-input" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Unit Price</label>
+                                <input type="number" name="unit_price_0" class="form-input" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Discount</label>
+                                <input type="number" name="discount_0" class="form-input" step="0.01" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="addItem()">Add Item</button>
+
+            <input type="hidden" name="item_count" id="item-count" value="1">
+
+            <div class="mt-2">
+                <button type="submit" class="btn btn-primary">Create Invoice</button>
+                <a href="{{ url_for('invoices') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let itemIndex = 1;
+
+function showTab(tabName) {
+    document.getElementById('transaction-tab').style.display = tabName === 'transaction' ? 'block' : 'none';
+    document.getElementById('manual-tab').style.display = tabName === 'manual' ? 'block' : 'none';
+
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function addItem() {
+    const container = document.getElementById('items-container');
+    const itemRow = document.createElement('div');
+    itemRow.className = 'item-row';
+    itemRow.setAttribute('data-index', itemIndex);
+
+    itemRow.innerHTML = `
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Description *</label>
+                <input type="text" name="description_KSh {itemIndex}" class="form-input" required>
+            </div>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label class="form-label">Qty</label>
+                    <input type="number" name="quantity_KSh {itemIndex}" class="form-input" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit Price</label>
+                    <input type="number" name="unit_price_KSh {itemIndex}" class="form-input" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Discount</label>
+                    <input type="number" name="discount_KSh {itemIndex}" class="form-input" step="0.01" value="0">
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger" onclick="removeItem(this)" style="margin-bottom: 16px;">Remove</button>
+    `;
+
+    container.appendChild(itemRow);
+    itemIndex++;
+    document.getElementById('item-count').value = itemIndex;
+}
+
+function removeItem(button) {
+    button.parentElement.remove();
+    // Update item count
+    const items = document.querySelectorAll('.item-row');
+    document.getElementById('item-count').value = items.length;
+}
+</script>
+{% endblock %}

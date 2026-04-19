@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Email Settings - PharmaSuite{% endblock %}
+{% block header %}Email Settings{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Email Configuration</div>
+
+    <div class="alert alert-info">
+        <strong>Email Receipt Setup:</strong> Configure email settings to automatically send receipts to customers after purchases.
+    </div>
+
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">SMTP Server</label>
+                <input type="text" name="smtp_server" class="form-input" placeholder="smtp.gmail.com" value="{{ settings.get('smtp_server', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">SMTP Port</label>
+                <input type="number" name="smtp_port" class="form-input" value="{{ settings.get('smtp_port', '587') }}">
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="smtp_username" class="form-input" placeholder="your@email.com" value="{{ settings.get('smtp_username', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="smtp_password" class="form-input" value="{{ settings.get('smtp_password', '') }}">
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">From Name</label>
+                <input type="text" name="email_from_name" class="form-input" placeholder="PharmaSuite Pharmacy" value="{{ settings.get('email_from_name', global_settings.get('store_name', 'PharmaSuite Pharmacy')) }}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Reply-To Email</label>
+                <input type="email" name="email_reply_to" class="form-input" value="{{ settings.get('email_reply_to', global_settings.get('store_email', '')) }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="email_receipts_enabled" {% if settings.get('email_receipts_enabled') %}checked{% endif %}>
+                Enable automatic email receipts
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="email_require_customer_consent" {% if settings.get('email_require_customer_consent', True) %}checked{% endif %}>
+                Require customer consent before sending emails
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Email Subject Template</label>
+            <input type="text" name="email_subject_template" class="form-input" placeholder="Your Receipt from {store_name}" value="{{ settings.get('email_subject_template', 'Your Receipt from {store_name}') }}">
+            <small style="color: #64748b; font-size: 12px;">Use {store_name}, {transaction_number}, {customer_name} as placeholders</small>
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Email Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="testEmail()">Test Email</button>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Email Templates</div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showEmailTemplate('receipt')">Receipt Email</div>
+        <div class="tab" onclick="showEmailTemplate('welcome')">Welcome Email</div>
+        <div class="tab" onclick="showEmailTemplate('marketing')">Marketing Email</div>
+    </div>
+
+    <div id="receipt-template" class="tab-content">
+        <form method="POST" action="/email/templates/receipt">
+            <div class="form-group">
+                <label class="form-label">Email Subject</label>
+                <input type="text" name="subject" class="form-input" value="Your Receipt - {transaction_number}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Body (HTML)</label>
+                <textarea name="body_html" class="form-input" rows="10">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Your Receipt&lt;/title&gt;
+&lt;/head&gt;
+&lt;body style="font-family: Arial, sans-serif;"&gt;
+    &lt;h2&gt;Thank you for your purchase!&lt;/h2&gt;
+    &lt;p&gt;Dear {customer_name},&lt;/p&gt;
+
+    &lt;p&gt;Here is your receipt for transaction #{transaction_number}.&lt;/p&gt;
+
+    &lt;!-- Receipt content will be embedded here --&gt;
+
+    &lt;p&gt;If you have any questions, please contact us.&lt;/p&gt;
+
+    &lt;p&gt;Best regards,&lt;br&gt;
+    {store_name}&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+                </textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Receipt Template</button>
+        </form>
+    </div>
+
+    <div id="welcome-template" class="tab-content" style="display: none;">
+        <form method="POST" action="/email/templates/welcome">
+            <div class="form-group">
+                <label class="form-label">Welcome Email Subject</label>
+                <input type="text" name="subject" class="form-input" value="Welcome to {store_name}!">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Welcome Email Body</label>
+                <textarea name="body_html" class="form-input" rows="8">
+Welcome to {store_name}!
+
+Thank you for choosing us for your pharmacy needs.
+
+Available placeholders: {customer_name}, {store_name}, {store_address}, {store_phone}
+                </textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Welcome Template</button>
+        </form>
+    </div>
+
+    <div id="marketing-template" class="tab-content" style="display: none;">
+        <form method="POST" action="/email/templates/marketing">
+            <div class="form-group">
+                <label class="form-label">Marketing Email Subject</label>
+                <input type="text" name="subject" class="form-input" value="Special Offers from {store_name}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Marketing Email Body</label>
+                <textarea name="body_html" class="form-input" rows="8">
+Dear {customer_name},
+
+Check out our latest offers and promotions!
+
+[Marketing content here]
+
+Visit us at {store_address}
+Call us at {store_phone}
+                </textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Marketing Template</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Email Testing & Logs</div>
+
+    <div class="grid-2">
+        <div>
+            <h4>Test Email</h4>
+            <form id="test-email-form">
+                <div class="form-group">
+                    <label class="form-label">Test Email Address</label>
+                    <input type="email" id="test-email" class="form-input" placeholder="test@example.com">
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="sendTestEmail()">Send Test Email</button>
+            </form>
+        </div>
+
+        <div>
+            <h4>Email Status</h4>
+            <div id="email-status" class="alert alert-warning">
+                <strong>Status:</strong> Not Configured
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showEmailTemplate(templateType) {
+    // Hide all templates
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Show selected template
+    document.getElementById(templateType + '-template').style.display = 'block';
+
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+}
+
+function testEmail() {
+    const email = document.getElementById('test-email').value;
+
+    if (!email) {
+        alert('Please enter a test email address');
+        return;
+    }
+
+    fetch('/email/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Test email sent successfully!');
+        } else {
+            alert('Error sending test email: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function sendTestEmail() {
+    testEmail(); // Alias for backward compatibility
+}
+</script>
+{% endblock %}

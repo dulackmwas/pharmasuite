@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaSuite - Pharmacy Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(-45deg, #1e3a8a, #1e40af, #2563eb, #3b82f6, #1e3a8a);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        /* Ensure proper spacing on very small screens */
+        @media (max-width: 360px) {
+            body {
+                padding: 8px;
+            }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 100% 50%; }
+            50% { background-position: 100% 0%; }
+            75% { background-position: 0% 0%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Decorative circles */
+        .decorator-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: block;
+        }
+
+        .decorator-circle:nth-child(1) {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 10%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .decorator-circle:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            top: 70%;
+            right: 15%;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        .decorator-circle:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            bottom: 20%;
+            left: 20%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Responsive decorative circles */
+        @media (max-width: 768px) {
+            .decorator-circle:nth-child(1) {
+                width: 120px;
+                height: 120px;
+                top: 15%;
+                left: 5%;
+            }
+
+            .decorator-circle:nth-child(2) {
+                width: 90px;
+                height: 90px;
+                top: 75%;
+                right: 10%;
+            }
+
+            .decorator-circle:nth-child(3) {
+                width: 60px;
+                height: 60px;
+                bottom: 15%;
+                left: 15%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .decorator-circle {
+                display: none;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 10px 20px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            padding: 48px 40px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #1e3a8a, #2563eb, #3b82f6, #1e40af);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-box {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        .brand-box::after {
+            content: '🛒';
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            font-size: 18px;
+            background: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .brand-box::after {
+            content: '🛒';
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            font-size: 18px;
+            background: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 52px;
+            padding: 0 48px 0 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 400;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+            background: white;
+        }
+
+        .form-input:hover {
+            border-color: #cbd5e1;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .form-input:focus + .input-icon {
+            color: #1e3a8a;
+        }
+
+        /* Role Selector */
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .role-btn {
+            height: 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: transparent;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .role-btn:hover {
+            border-color: #cbd5e1;
+            background: rgba(30, 58, 138, 0.05);
+        }
+
+        .role-btn.active {
+            background: #1e3a8a;
+            border-color: #1e3a8a;
+            color: white;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+        }
+
+        .role-btn.active:hover {
+            background: #1e40af;
+            border-color: #1e40af;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #1e3a8a;
+            border: 2px solid #1e3a8a;
+            box-shadow: 0 4px 16px rgba(30, 58, 138, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #1e3a8a;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 8px 0;
+        }
+
+        .btn-link:hover {
+            color: #1e3a8a;
+            text-decoration: underline;
+        }
+
+        /* Status Messages */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1e3a8a;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        /* Loading States */
+        .btn.loading {
+            pointer-events: none;
+        }
+
+        .btn.loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(30, 58, 138, 0.3);
+            border-top: 2px solid #1e3a8a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+
+        /* Large screens (1200px+) */
+        @media (min-width: 1200px) {
+            .login-container {
+                max-width: 520px;
+            }
+
+            .login-card {
+                padding: 56px 48px;
+            }
+
+            .brand-box {
+                width: 90px;
+                height: 90px;
+                font-size: 36px;
+                border-radius: 18px;
+            }
+
+            .login-title {
+                font-size: 32px;
+            }
+
+            .form-input {
+                height: 56px;
+                font-size: 18px;
+            }
+
+            .btn {
+                height: 56px;
+                font-size: 18px;
+            }
+        }
+
+        /* Medium screens (768px - 1199px) */
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .login-container {
+                max-width: 480px;
+                padding: 20px;
+            }
+
+            .login-card {
+                padding: 44px 36px;
+            }
+
+            .brand-box {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
+
+            .login-title {
+                font-size: 28px;
+            }
+        }
+
+        /* Small screens (481px - 767px) */
+        @media (min-width: 481px) and (max-width: 767px) {
+            .login-container {
+                max-width: 420px;
+                padding: 20px;
+            }
+
+            .login-card {
+                padding: 36px 32px;
+                border-radius: 20px;
+            }
+
+            .brand-box {
+                width: 75px;
+                height: 75px;
+                font-size: 30px;
+            }
+
+            .login-title {
+                font-size: 26px;
+            }
+
+            .role-selector {
+                gap: 10px;
+            }
+
+            .role-btn {
+                height: 46px;
+                font-size: 14px;
+            }
+
+            .form-input {
+                height: 50px;
+                font-size: 16px;
+            }
+
+            .btn {
+                height: 50px;
+                font-size: 16px;
+            }
+        }
+
+        /* Extra small screens (up to 480px) */
+        @media (max-width: 480px) {
+            .login-container {
+                max-width: 100%;
+                padding: 16px;
+            }
+
+            .login-card {
+                padding: 32px 24px;
+                border-radius: 16px;
+                margin: 0 8px;
+            }
+
+            .login-header {
+                margin-bottom: 24px;
+            }
+
+            .brand-box {
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+                border-radius: 14px;
+            }
+
+            .login-title {
+                font-size: 24px;
+                margin-bottom: 4px;
+            }
+
+            .login-subtitle {
+                font-size: 13px;
+            }
+
+            .role-selector {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                margin-bottom: 24px;
+            }
+
+            .role-btn {
+                height: 44px;
+                font-size: 13px;
+                padding: 0 12px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-label {
+                margin-bottom: 6px;
+            }
+
+            .form-input {
+                height: 48px;
+                font-size: 16px;
+                padding: 0 44px 0 16px;
+            }
+
+            .input-icon {
+                right: 14px;
+            }
+
+            .btn {
+                height: 48px;
+                font-size: 15px;
+            }
+
+            .alert {
+                padding: 14px 18px;
+                font-size: 13px;
+            }
+
+            .login-footer {
+                margin-top: 24px;
+                padding-top: 20px;
+            }
+
+            .login-footer p {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+
+            /* Hide decorative circles on very small screens */
+            .decorator-circle {
+                display: none;
+            }
+        }
+
+        /* Very small screens (up to 360px) */
+        @media (max-width: 360px) {
+            .login-card {
+                padding: 24px 20px;
+                margin: 0 4px;
+            }
+
+            .brand-box {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            .login-title {
+                font-size: 22px;
+            }
+
+            .role-btn {
+                height: 42px;
+                font-size: 12px;
+            }
+
+            .form-input {
+                height: 46px;
+                font-size: 15px;
+            }
+
+            .btn {
+                height: 46px;
+                font-size: 14px;
+            }
+
+            .login-footer div:first-child {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .login-footer div:first-child > div {
+                font-size: 10px;
+                padding: 4px 6px;
+            }
+        }
+
+        /* Accessibility */
+        .form-input:focus,
+        .role-btn:focus,
+        .btn:focus {
+            outline: 2px solid #1e3a8a;
+            outline-offset: 2px;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+            }
+
+            .login-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Decorative background elements -->
+    <div class="decorator-circle"></div>
+    <div class="decorator-circle"></div>
+    <div class="decorator-circle"></div>
+
+    <!-- Toast container for notifications -->
+    <div id="toastContainer"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="brand-box">
+                    {% if global_settings.get('store_logo') %}
+                        <img src="{{ url_for('uploaded_file', filename=global_settings.get('store_logo')) }}" alt="Store Logo">
+                    {% else %}
+                        P
+                    {% endif %}
+                </div>
+                <h1 class="login-title">PharmaSuite</h1>
+                <p class="login-subtitle">Inventory & POS Management</p>
+            </div>
+
+            <!-- Status Messages -->
+            {% if error %}
+            <div class="alert alert-error">
+                <span>⚠️</span>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="alert alert-success">
+                <span>✅</span>
+                {{ success }}
+            </div>
+            {% if redirect %}
+            <script>
+                setTimeout(function() {
+                    window.location.href = '{{ url_for("dashboard") }}';
+                }, 2000);
+            </script>
+            {% endif %}
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                <!-- Role Selection -->
+                <div class="form-group">
+                    <label class="form-label">Select Your Role</label>
+                    <div class="role-selector">
+                        <button type="button" class="role-btn active" data-role="cashier">
+                            <span>💰</span> Cashier
+                        </button>
+                        <button type="button" class="role-btn" data-role="pharmacist">
+                            <span>⚕️</span> Pharmacist
+                        </button>
+                        <button type="button" class="role-btn" data-role="admin">
+                            <span>🛡️</span> Admin
+                        </button>
+                    </div>
+                    <input type="hidden" name="role" id="selectedRole" value="cashier">
+                </div>
+
+                <!-- Username Field -->
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           class="form-input"
+                           required
+                           autofocus
+                           autocomplete="username"
+                           placeholder="Enter your username">
+                    <span class="input-icon">👤</span>
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           class="form-input"
+                           required
+                           autocomplete="current-password"
+                           placeholder="Enter your password">
+                    <span class="input-icon" id="passwordIcon">🔒</span>
+                </div>
+
+                <!-- Login Button -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <button type="submit" class="btn btn-primary" id="loginBtn">
+                        <span id="btnText">Sign In Securely</span>
+                    </button>
+                </div>
+
+                <!-- Forgot Password Link -->
+                <div class="form-group" style="text-align: center; margin-bottom: 0;">
+                    <a href="#" class="btn-link" id="forgotPassword">Forgot your password?</a>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(0, 0, 0, 0.1);">
+                <p style="color: #64748b; font-size: 12px; margin-bottom: 12px;">
+                    Secure pharmacy management system
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; margin-bottom: 8px;">
+                    <div style="background: rgba(30, 58, 138, 0.1); color: #1e3a8a; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;">
+                        <strong>Admin:</strong> admin / admin123
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); color: #065f46; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;">
+                        <strong>Pharmacist:</strong> pharmacist / pharma123
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); color: #92400e; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;">
+                        <strong>Store Keeper:</strong> storekeeper / store123
+                    </div>
+                    <div style="background: rgba(139, 92, 246, 0.1); color: #5b21b6; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;">
+                        <strong>Cashier:</strong> cashier / cashier123
+                    </div>
+                </div>
+                <p style="color: #9ca3af; font-size: 10px;">
+                    Select your role above and use the corresponding demo credentials
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const selectedRoleInput = document.getElementById('selectedRole');
+            const roleButtons = document.querySelectorAll('.role-btn');
+            const passwordIcon = document.getElementById('passwordIcon');
+            const passwordInput = document.getElementById('password');
+            const forgotPasswordLink = document.getElementById('forgotPassword');
+
+            let passwordVisible = false;
+
+            // Role selection functionality
+            roleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    roleButtons.forEach(btn => btn.classList.remove('active'));
+
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Update hidden input
+                    const role = this.getAttribute('data-role');
+                    selectedRoleInput.value = role;
+
+                    // Auto-fill demo credentials based on role
+                    const demoCredentials = {
+                        'admin': { username: 'admin', password: 'admin123' },
+                        'pharmacist': { username: 'pharmacist', password: 'pharma123' },
+                        'store_keeper': { username: 'storekeeper', password: 'store123' },
+                        'cashier': { username: 'cashier', password: 'cashier123' }
+                    };
+
+                    if (demoCredentials[role]) {
+                        document.getElementById('username').value = demoCredentials[role].username;
+                        document.getElementById('password').value = demoCredentials[role].password;
+                        showToast(`Demo credentials loaded for KSh {role.replace('_', ' ').toUpperCase()}`, 'success');
+                    } else {
+                        showToast(`Role selected: KSh {role.charAt(0).toUpperCase() + role.slice(1)}`, 'success');
+                    }
+                });
+            });
+
+            // Password visibility toggle
+            passwordIcon.addEventListener('click', function() {
+                passwordVisible = !passwordVisible;
+                passwordInput.type = passwordVisible ? 'text' : 'password';
+                this.textContent = passwordVisible ? '👁️' : '🔒';
+            });
+
+            // Form submission handling
+            form.addEventListener('submit', function(e) {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const role = selectedRoleInput.value;
+
+                // Basic validation
+                if (!username || !password) {
+                    e.preventDefault();
+                    showToast('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Show loading state
+                loginBtn.classList.add('loading');
+                btnText.textContent = 'Signing in...';
+
+                // Add visual feedback
+                showToast('Authenticating your credentials...', 'success');
+            });
+
+            // Forgot password functionality
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+
+                if (!username) {
+                    showToast('Please enter your username first', 'error');
+                    document.getElementById('username').focus();
+                    return;
+                }
+
+                // Show loading state
+                this.textContent = 'Sending...';
+                this.style.pointerEvents = 'none';
+
+                // Send AJAX request
+                fetch('/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        username: username
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Network error. Please try again.', 'error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    this.textContent = 'Forgot your password?';
+                    this.style.pointerEvents = 'auto';
+                });
+            });
+
+            // Enhanced form interactions
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'translateY(-1px)';
+                });
+
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Auto-focus enhancement
+            const usernameInput = document.getElementById('username');
+            if (!usernameInput.value) {
+                usernameInput.focus();
+            }
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter to submit
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+        });
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+
+            // Remove existing toasts
+            const existingToasts = toastContainer.querySelectorAll('.toast');
+            existingToasts.forEach(toast => toast.remove());
+
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>KSh {type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Auto-hide after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+
+            // Click to dismiss
+            toast.addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            });
+        }
+
+        // Add some interactive background effects
+        document.addEventListener('mousemove', function(e) {
+            const circles = document.querySelectorAll('.decorator-circle');
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+
+            circles.forEach((circle, index) => {
+                const speed = (index + 1) * 0.5;
+                const x = (mouseX - 0.5) * speed * 20;
+                const y = (mouseY - 0.5) * speed * 20;
+                circle.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Inventory Report - PharmaSuite{% endblock %}
+{% block header %}Inventory Report{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span>Current Inventory</span>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Cost</th>
+                <th>Price</th>
+                <th>Value</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in inventory %}
+            <tr>
+                <td>{{ item.sku or '-' }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.stock }}</td>
+                <td>KSh {{ "%.2f"|format(item.cost_price) }}</td>
+                <td>KSh {{ "%.2f"|format(item.unit_price) }}</td>
+                <td>KSh {{ "%.2f"|format(item.value) }}</td>
+                <td>
+                    <span class="badge badge-{% if item.status == 'Low Stock' %}error{% else %}success{% endif %}">{{ item.status }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

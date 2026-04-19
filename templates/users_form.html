@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{% if user %}Edit User{% else %}Add User{% endif %} - PharmaSuite{% endblock %}
+{% block header %}{% if user %}Edit User{% else %}Add User{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Username *</label>
+                <input type="text" name="username" class="form-input" required value="{{ user.username if user else '' }}" {% if user %}readonly{% endif %}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-input" required value="{{ user.name if user else '' }}">
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" value="{{ user.email if user else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-select" required>
+                    <option value="cashier" {% if user and user.role.name == 'cashier' %}selected{% endif %}>Cashier</option>
+                    <option value="pharmacist" {% if user and user.role.name == 'pharmacist' %}selected{% endif %}>Pharmacist</option>
+                    <option value="store_keeper" {% if user and user.role.name == 'store_keeper' %}selected{% endif %}>Store Keeper</option>
+                    <option value="admin" {% if user and user.role.name == 'admin' %}selected{% endif %}>Administrator</option>
+                </select>
+            </div>
+        </div>
+        
+        {% if not user %}
+        <div class="form-group">
+            <label class="form-label">Password *</label>
+            <input type="password" name="password" class="form-input" required>
+        </div>
+        {% else %}
+        <div class="form-group">
+            <label class="form-label">New Password (leave blank to keep current)</label>
+            <input type="password" name="password" class="form-input">
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_active" {% if not user or user.is_active %}checked{% endif %}>
+                Active User
+            </label>
+        </div>
+        
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save User</button>
+            <a href="{{ url_for('users') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Role Permissions</div>
+    <div class="grid-2">
+        <div>
+            <h4>Cashier</h4>
+            <ul>
+                <li>Process sales and returns</li>
+                <li>View customer information</li>
+                <li>Basic POS operations</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Pharmacist</h4>
+            <ul>
+                <li>All cashier permissions</li>
+                <li>Manage prescriptions</li>
+                <li>View inventory</li>
+                <li>Access to pharmacy-specific features</li>
+            </ul>
+        </div>
+    </div>
+    <div class="grid-2 mt-1">
+        <div>
+            <h4>Store Keeper</h4>
+            <ul>
+                <li>Manage inventory</li>
+                <li>Add/edit products</li>
+                <li>Manage suppliers</li>
+                <li>Inventory reports</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Administrator</h4>
+            <ul>
+                <li>All permissions</li>
+                <li>Manage users</li>
+                <li>System configuration</li>
+                <li>All reports and analytics</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

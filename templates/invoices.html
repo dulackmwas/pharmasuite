@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Invoices - PharmaSuite{% endblock %}
+{% block header %}Invoices{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Invoice List</span>
+            <a href="{{ url_for('invoices_create') }}" class="btn btn-primary">Create Invoice</a>
+        </div>
+    </div>
+
+    <div class="search-bar" style="margin-bottom: 16px;">
+        <form method="GET">
+            <select name="status" class="form-select" style="width: 150px;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="unpaid" {% if current_status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+                <option value="paid" {% if current_status == 'paid' %}selected{% endif %}>Paid</option>
+                <option value="partial" {% if current_status == 'partial' %}selected{% endif %}>Partial</option>
+                <option value="overdue" {% if current_status == 'overdue' %}selected{% endif %}>Overdue</option>
+                <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <select name="customer_id" class="form-select" style="width: 200px;" onchange="this.form.submit()">
+                <option value="">All Customers</option>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}" {% if request.args.get('customer_id') == customer.id|string %}selected{% endif %}>{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td><a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                <td>{{ invoice.customer.name }}</td>
+                <td>{{ invoice.created_at.strftime('%m/%d/%Y') }}</td>
+                <td>{{ invoice.due_date or '-' }}</td>
+                <td>KSh {{ "%.2f"|format(invoice.total) }}</td>
+                <td>
+                    {% set balance = invoice.get_balance_due() %}
+                    {% if balance > 0 %}
+                        <strong class="text-error">KSh {{ "%.2f"|format(balance) }}</strong>
+                    {% else %}
+                        $0.00
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' or invoice.is_overdue() %}error{% elif invoice.status == 'partial' %}warning{% else %}info{% endif %}">
+                        {% if invoice.is_overdue() and invoice.status != 'paid' %}Overdue{% else %}{{ invoice.status.title() }}{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('invoices_view', invoice_id=invoice.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View</a>
+                    <a href="{{ url_for('invoices_pdf', invoice_id=invoice.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">PDF</a>
+                    {% if invoice.get_balance_due() > 0 %}
+                    <button class="btn btn-success" style="padding: 4px 8px;" onclick="recordPayment({{ invoice.id }})">Pay</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('invoices', page=p, status=current_status, customer_id=request.args.get('customer_id')) }}" class="pagination-item {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function recordPayment(invoiceId) {
+    const amount = prompt('Enter payment amount:');
+    if (amount && parseFloat(amount) > 0) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/invoices/${invoiceId}/payment`;
+
+        const amountInput = document.createElement('input');
+        amountInput.type = 'hidden';
+        amountInput.name = 'amount';
+        amountInput.value = amount;
+
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = 'payment_method';
+        methodInput.value = 'cash';
+
+        form.appendChild(amountInput);
+        form.appendChild(methodInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

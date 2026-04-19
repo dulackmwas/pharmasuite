@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Payment Gateways - PharmaSuite{% endblock %}
+{% block header %}Payment Gateway Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Payment Gateways</span>
+            <button class="btn btn-primary" onclick="testConnections()">Test Connections</button>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        {% for gateway in gateways %}
+        <div class="card">
+            <div class="card-header">
+                <div class="flex flex-between">
+                    <span>{{ gateway.display_name }}</span>
+                    <span class="badge badge-{% if gateway.is_active %}success{% else %}error{% endif %}">
+                        {% if gateway.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <p><strong>Type:</strong> {{ gateway.gateway_type.title() }}</p>
+                <p><strong>Processing Fee:</strong>
+                    {% if gateway.processing_fee_fixed > 0 %}
+                        KSh {{ "%.2f"|format(gateway.processing_fee_fixed) }} fixed
+                    {% endif %}
+                    {% if gateway.processing_fee_percentage > 0 %}
+                        {{ "%.2f"|format(gateway.processing_fee_percentage) }}%
+                    {% endif %}
+                    {% if gateway.processing_fee_fixed == 0 and gateway.processing_fee_percentage == 0 %}
+                        None
+                    {% endif %}
+                </p>
+                <p><strong>Mode:</strong>
+                    <span class="badge badge-{% if gateway.is_test_mode %}warning{% else %}info{% endif %}">
+                        {% if gateway.is_test_mode %}Test{% else %}Live{% endif %}
+                    </span>
+                </p>
+            </div>
+
+            <div class="actions">
+                <a href="{{ url_for('payment_gateways_configure', gateway_name=gateway.name) }}" class="btn btn-secondary">Configure</a>
+                <button class="btn btn-{% if gateway.is_active %}danger{% else %}success{% endif %}" onclick="toggleGateway('{{ gateway.name }}', {{ gateway.is_active|lower }})">
+                    {{ 'Deactivate' if gateway.is_active else 'Activate' }}
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Payment Gateway Information</div>
+    <div class="grid-2">
+        <div>
+            <h4>M-Pesa</h4>
+            <p>Mobile money payment system for East Africa. Supports STK Push for seamless payments.</p>
+            <ul>
+                <li>STK Push integration</li>
+                <li>Real-time callbacks</li>
+                <li>Safaricom network</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Stripe</h4>
+            <p>Global payment processor supporting credit cards, digital wallets, and more.</p>
+            <ul>
+                <li>Credit/Debit cards</li>
+                <li>Apple Pay, Google Pay</li>
+                <li>Webhook notifications</li>
+            </ul>
+        </div>
+    </div>
+    <div class="grid-2 mt-1">
+        <div>
+            <h4>PayPal</h4>
+            <p>Popular digital wallet for online payments worldwide.</p>
+            <ul>
+                <li>PayPal accounts</li>
+                <li>Credit card payments</li>
+                <li>Express Checkout</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Bank Transfer</h4>
+            <p>Traditional bank transfer payments for business transactions.</p>
+            <ul>
+                <li>Wire transfers</li>
+                <li>ACH payments</li>
+                <li>Manual reconciliation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnections() {
+    fetch('/api/payment-gateways/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        let message = 'Connection Test Results:\n\n';
+        for (const [gateway, status] of Object.entries(data)) {
+            const statusText = status ? '✓ Connected' : '✗ Failed';
+            message += `${gateway.charAt(0).toUpperCase() + gateway.slice(1)}: ${statusText}\n`;
+        }
+        alert(message);
+    })
+    .catch(error => {
+        console.error('Connection test error:', error);
+        alert('Error testing connections. Please check your gateway configurations and try again.');
+    });
+}
+
+function toggleGateway(gatewayName, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    if (confirm(`Are you sure you want to ${action} ${gatewayName}?`)) {
+        fetch(`/api/payment-gateways/${gatewayName}/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

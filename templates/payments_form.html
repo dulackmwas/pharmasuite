@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}Record Payment - PharmaSuite{% endblock %}
+{% block header %}Record Payment{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Record New Payment</div>
+
+    <form method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Customer *</label>
+                <select name="customer_id" class="form-select" required id="customer-select">
+                    <option value="">Select Customer</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" data-balance="{{ customer.current_balance }}">{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Apply to Invoice (Optional)</label>
+                <select name="invoice_id" class="form-select" id="invoice-select">
+                    <option value="">General Payment</option>
+                    {% for invoice in invoices %}
+                    <option value="{{ invoice.id }}" data-customer="{{ invoice.customer_id }}" data-balance="{{ invoice.get_balance_due() }}">
+                        {{ invoice.invoice_number }} - KSh {{ "%.2f"|format(invoice.get_balance_due()) }} due
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Payment Amount *</label>
+                <input type="number" name="amount" class="form-input" step="0.01" required id="amount-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Payment Method *</label>
+                <select name="payment_method" class="form-select" required id="payment-method-select">
+                    <option value="cash">Cash</option>
+                    <option value="mpesa">M-Pesa</option>
+                    <option value="stripe">Stripe</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="check">Check</option>
+                    <option value="credit">Credit Account</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Cash Payment Fields -->
+        <div id="cash-fields" class="gateway-fields" style="display: none;">
+            <div class="form-group">
+                <label class="form-label">Amount Paid *</label>
+                <input type="number" name="amount_paid" class="form-input" step="0.01" id="amount-paid-input">
+                <small class="text-muted">Amount received from customer</small>
+            </div>
+        </div>
+
+        <!-- M-Pesa Fields -->
+        <div id="mpesa-fields" class="gateway-fields" style="display: none;">
+            <div class="form-group">
+                <label class="form-label">Phone Number *</label>
+                <input type="tel" name="phone_number" class="form-input" placeholder="+254XXXXXXXXX">
+                <small class="text-muted">Customer's M-Pesa registered phone number</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Account Reference</label>
+                <input type="text" name="account_reference" class="form-input" value="PharmaSuite Payment">
+            </div>
+        </div>
+
+        <!-- Stripe Fields -->
+        <div id="stripe-fields" class="gateway-fields" style="display: none;">
+            <div id="stripe-card-element">
+                <!-- Stripe Card Element will be inserted here -->
+            </div>
+            <div id="stripe-errors" class="text-error" style="margin-top: 8px;"></div>
+        </div>
+
+        <!-- PayPal Fields -->
+        <div id="paypal-fields" class="gateway-fields" style="display: none;">
+            <div id="paypal-button-container"></div>
+            <small class="text-muted">Customer will be redirected to PayPal for payment</small>
+        </div>
+
+        <!-- Bank Transfer Fields -->
+        <div id="bank-transfer-fields" class="gateway-fields" style="display: none;">
+            <div class="alert alert-info">
+                <strong>Bank Transfer Instructions:</strong><br>
+                Account Name: PharmaSuite Pharmacy<br>
+                Account Number: 1234567890<br>
+                Routing Number: 123456789<br>
+                Reference: Payment will be generated
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Reference Number (Check #, Transaction ID, etc.)</label>
+            <input type="text" name="reference_number" class="form-input" id="reference-input">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-input" rows="2"></textarea>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Note:</strong> Payments applied to specific invoices will reduce the invoice balance.
+            General payments will reduce the customer's account balance.
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-success">Record Payment</button>
+            <a href="{{ url_for('payments') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Customer Balances</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Credit Limit</th>
+                <th>Current Balance</th>
+                <th>Available Credit</th>
+                <th>Outstanding Invoices</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>KSh {{ "%.2f"|format(customer.credit_limit) }}</td>
+                <td>KSh {{ "%.2f"|format(customer.current_balance) }}</td>
+                <td>
+                    {% set available = customer.credit_limit - customer.current_balance %}
+                    <span class="badge badge-{% if available > 0 %}success{% else %}error{% endif %}">
+                        KSh {{ "%.2f"|format(available) }}
+                    </span>
+                </td>
+                <td>{{ customer.invoices|selectattr('status', 'in', ['unpaid', 'partial'])|list|length }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.getElementById('customer-select').addEventListener('change', function() {
+    const customerId = this.value;
+    const invoiceSelect = document.getElementById('invoice-select');
+
+    // Filter invoices by selected customer
+    Array.from(invoiceSelect.options).forEach(option => {
+        if (option.value === '') return; // Keep "General Payment" option
+        const invoiceCustomerId = option.getAttribute('data-customer');
+        option.style.display = !customerId || invoiceCustomerId === customerId ? 'block' : 'none';
+    });
+
+    // Reset invoice selection if customer changed
+    if (customerId !== invoiceSelect.options[invoiceSelect.selectedIndex]?.getAttribute('data-customer')) {
+        invoiceSelect.selectedIndex = 0;
+    }
+});
+
+document.getElementById('invoice-select').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const balance = selectedOption.getAttribute('data-balance');
+    const amountInput = document.getElementById('amount-input');
+
+    if (balance && parseFloat(balance) > 0) {
+        amountInput.value = balance;
+    }
+});
+
+// Payment method selection handler
+document.getElementById('payment-method-select').addEventListener('change', function() {
+    const method = this.value;
+
+    // Hide all gateway fields
+    document.querySelectorAll('.gateway-fields').forEach(field => {
+        field.style.display = 'none';
+    });
+
+    // Show relevant fields based on payment method
+    if (method === 'cash') {
+        document.getElementById('cash-fields').style.display = 'block';
+        document.getElementById('amount-paid-input').focus();
+    } else if (method === 'mpesa') {
+        document.getElementById('mpesa-fields').style.display = 'block';
+    } else if (method === 'stripe') {
+        document.getElementById('stripe-fields').style.display = 'block';
+        initializeStripe();
+    } else if (method === 'paypal') {
+        document.getElementById('paypal-fields').style.display = 'block';
+        initializePayPal();
+    } else if (method === 'bank_transfer') {
+        document.getElementById('bank-transfer-fields').style.display = 'block';
+    }
+});
+
+// Cash payment change calculation
+document.getElementById('amount-paid-input').addEventListener('input', function() {
+    const amountPaid = parseFloat(this.value) || 0;
+    const amountDue = parseFloat(document.getElementById('amount-input').value) || 0;
+    const change = Math.max(0, amountPaid - amountDue);
+
+    // Update change display if element exists
+    let changeDisplay = document.getElementById('change-display');
+    if (!changeDisplay) {
+        changeDisplay = document.createElement('div');
+        changeDisplay.id = 'change-display';
+        changeDisplay.className = 'text-success';
+        this.parentNode.appendChild(changeDisplay);
+    }
+    changeDisplay.textContent = change > 0 ? `Change: KSh KSh {change.toFixed(2)}` : '';
+});
+
+function initializeStripe() {
+    // Load Stripe.js and initialize payment element
+    if (typeof Stripe === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://js.stripe.com/v3/';
+        script.onload = function() {
+            setupStripeElements();
+        };
+        document.head.appendChild(script);
+    } else {
+        setupStripeElements();
+    }
+}
+
+function setupStripeElements() {
+    // This would be implemented with actual Stripe integration
+    const cardElement = document.getElementById('stripe-card-element');
+    cardElement.innerHTML = '<div class="alert alert-info">Stripe payment form would be loaded here</div>';
+}
+
+function initializePayPal() {
+    // Load PayPal SDK and render buttons
+    const script = document.createElement('script');
+    script.src = 'https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=KES';
+    script.onload = function() {
+        paypal.Buttons({
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: document.getElementById('amount-input').value
+                        }
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    alert('Payment completed successfully!');
+                    // Submit form with PayPal details
+                });
+            }
+        }).render('#paypal-button-container');
+    };
+    document.head.appendChild(script);
+}
+
+// Form submission handler
+document.querySelector('form').addEventListener('submit', function(e) {
+    const method = document.getElementById('payment-method-select').value;
+
+    if (method === 'cash') {
+        // Handle cash payment
+        e.preventDefault();
+        processCashPayment();
+    } else if (['mpesa', 'stripe', 'paypal', 'bank_transfer'].includes(method)) {
+        // Handle gateway payments
+        e.preventDefault();
+        processGatewayPayment(method);
+    }
+    // Other methods submit normally
+});
+
+function processCashPayment() {
+    const formData = new FormData(document.querySelector('form'));
+
+    fetch('/payments/cash', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(`Payment recorded successfully!\nTransaction: ${data.transaction_number}\nChange: KSh ${data.change_given}`);
+            window.location.href = '/payments';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error processing payment: ' + error);
+    });
+}
+
+function processGatewayPayment(gateway) {
+    const formData = {
+        customer_id: document.getElementById('customer-select').value,
+        amount: document.getElementById('amount-input').value,
+        payment_method: gateway
+    };
+
+    // Add gateway-specific data
+    if (gateway === 'mpesa') {
+        formData.phone_number = document.querySelector('input[name="phone_number"]').value;
+        formData.account_reference = document.querySelector('input[name="account_reference"]').value;
+    }
+
+    fetch(`/payments/process/${gateway}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            if (gateway === 'mpesa') {
+                alert('M-Pesa STK Push initiated. Please check your phone.');
+            } else if (gateway === 'stripe') {
+                // Handle Stripe payment intent
+                alert('Stripe payment initiated. Processing...');
+            } else if (gateway === 'paypal') {
+                window.location.href = data.approve_url;
+            } else if (gateway === 'bank_transfer') {
+                showBankTransferInstructions(data.instructions);
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error processing payment: ' + error);
+    });
+}
+
+function showBankTransferInstructions(instructions) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Bank Transfer Instructions</h3>
+                <span class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Transfer Details:</strong><br>
+                    Bank: ${instructions.bank_name}<br>
+                    Account: ${instructions.account_name}<br>
+                    Number: ${instructions.account_number}<br>
+                    Reference: ${instructions.reference}<br><br>
+                    ${instructions.instructions}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Done</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+</script>
+{% endblock %}

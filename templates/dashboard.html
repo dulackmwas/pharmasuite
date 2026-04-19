@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - PharmaSuite{% endblock %}
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Today's Sales</div>
+        <div class="stat-value">KSh {{ "%.2f"|format(sales.total_revenue) }}</div>
+        <div class="stat-change">{{ sales.transaction_count }} transactions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Prescriptions</div>
+        <div class="stat-value">{{ pending_prescriptions }}</div>
+    </div>
+    <div class="stat-card{% if not has_permission('inventory.view') %} blurred{% endif %}">
+        <div class="stat-label">Low Stock Items</div>
+        <div class="stat-value">{{ low_stock|length }}</div>
+    </div>
+    <div class="stat-card{% if not has_permission('inventory.view') %} blurred{% endif %}">
+        <div class="stat-label">Expiring Soon</div>
+        <div class="stat-value">{{ expiring|length }}</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card{% if not has_permission('inventory.view') %} blurred{% endif %}">
+        <div class="card-header">
+            Low Stock Alerts
+            {% if has_permission('inventory.view') %}
+            <a href="{{ url_for('products') }}" class="btn btn-secondary">View All</a>
+            {% endif %}
+        </div>
+        {% if low_stock %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Stock</th>
+                    <th>Reorder Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in low_stock %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.sku }}</td>
+                    <td><span class="badge badge-error">{{ item.current_stock }}</span></td>
+                    <td>{{ item.reorder_level }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No low stock items</div>
+        {% endif %}
+    </div>
+
+    <div class="card{% if not has_permission('inventory.view') %} blurred{% endif %}">
+        <div class="card-header">
+            Expiring Medications
+            {% if has_permission('inventory.view') %}
+            <a href="{{ url_for('inventory') }}" class="btn btn-secondary">View All</a>
+            {% endif %}
+        </div>
+        {% if expiring %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Batch</th>
+                    <th>Qty</th>
+                    <th>Expires</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in expiring %}
+                <tr>
+                    <td>{{ item.product_name }}</td>
+                    <td>{{ item.batch_number }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td><span class="badge badge-warning">{{ item.expiry_date }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No expiring items</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Quick Actions</div>
+    <div class="flex flex-gap">
+        <a href="{{ url_for('pos') }}" class="btn btn-primary{% if not has_permission('pos.access') %} blurred{% endif %}">New Sale</a>
+        <a href="{{ url_for('customers_add') }}" class="btn btn-secondary{% if not has_permission('customers.create') %} blurred{% endif %}">Add Customer</a>
+        <a href="{{ url_for('prescriptions_add') }}" class="btn btn-secondary{% if not has_permission('prescriptions.create') %} blurred{% endif %}">Add Prescription</a>
+        <a href="{{ url_for('products_add') }}" class="btn btn-secondary{% if not has_permission('products.create') %} blurred{% endif %}">Add Product</a>
+    </div>
+</div>
+{% endblock %}

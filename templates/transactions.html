@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Transactions - PharmaSuite{% endblock %}
+{% block header %}Transactions{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <form method="GET" class="search-bar" style="margin-bottom: 0;">
+            <input type="date" name="start_date" class="form-input" style="width: 150px;" placeholder="Start Date">
+            <input type="date" name="end_date" class="form-input" style="width: 150px;" placeholder="End Date">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Transaction #</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Subtotal</th>
+                <th>Tax</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td>{{ txn.transaction_number }}</td>
+                <td>{{ txn.customer.name if txn.customer else '-' }}</td>
+                <td>{{ txn.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>KSh {{ "%.2f"|format(txn.subtotal) }}</td>
+                <td>KSh {{ "%.2f"|format(txn.tax_amount) }}</td>
+                <td><strong>KSh {{ "%.2f"|format(txn.total) }}</strong></td>
+                <td>{{ txn.payment_method }}</td>
+                <td>
+                    <a href="{{ url_for('transactions_view', transaction_id=txn.id) }}" class="btn btn-secondary" style="padding: 4px 8px;">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="pagination">
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('transactions', page=p) }}" class="pagination-item {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Receipt Settings - PharmaSuite{% endblock %}
+{% block header %}Receipt Settings{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">General Receipt Settings</div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="auto_print_receipts" {% if settings.get('auto_print_receipts', True) %}checked{% endif %}>
+                Automatically print receipts after sale completion
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="show_customer_copy" {% if settings.get('show_customer_copy', True) %}checked{% endif %}>
+                Show option to print customer copy
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="email_receipts_default" {% if settings.get('email_receipts_default') %}checked{% endif %}>
+                Ask customers if they want email receipts by default
+            </label>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label class="form-label">Default Receipt Template</label>
+                <select name="default_receipt_template" class="form-select">
+                    {% for template in receipt_templates %}
+                    <option value="{{ template.id }}" {% if template.is_default %}selected{% endif %}>
+                        {{ template.name }} ({{ template.template_type }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Receipt Paper Size</label>
+                <select name="receipt_paper_size" class="form-select">
+                    <option value="58mm" {% if settings.get('receipt_paper_size') == '58mm' %}selected{% endif %}>58mm (Standard)</option>
+                    <option value="80mm" {% if settings.get('receipt_paper_size', '80mm') == '80mm' %}selected{% endif %}>80mm (Wide)</option>
+                    <option value="110mm" {% if settings.get('receipt_paper_size') == '110mm' %}selected{% endif %}>110mm (Extra Wide)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Receipt Header Text</label>
+            <textarea name="receipt_header" class="form-input" rows="2" placeholder="Welcome to our pharmacy!">{{ settings.get('receipt_header', '') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Receipt Footer Text</label>
+            <textarea name="receipt_footer" class="form-input" rows="2" placeholder="Thank you for your business">{{ settings.get('receipt_footer', '') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Receipt Terms & Conditions</label>
+            <textarea name="receipt_terms" class="form-input" rows="4" placeholder="Returns accepted within 7 days with receipt">{{ settings.get('receipt_terms', global_settings.get('receipt_terms', 'Thank you for your business!')) }}</textarea>
+        </div>
+
+        <div class="flex flex-gap mt-2">
+            <button type="submit" class="btn btn-primary">Save Receipt Settings</button>
+        </div>
+    </form>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Receipt Display Options</div>
+
+    <div class="grid-2">
+        <div>
+            <h4>Information to Include</h4>
+            <form method="POST" action="/receipt/settings/display">
+                <div style="display: grid; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_store_logo" {% if settings.get('show_store_logo', True) %}checked{% endif %}>
+                        <span>Store Logo</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_store_info" {% if settings.get('show_store_info', True) %}checked{% endif %}>
+                        <span>Store Information</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_transaction_details" {% if settings.get('show_transaction_details', True) %}checked{% endif %}>
+                        <span>Transaction Details</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_itemized_list" {% if settings.get('show_itemized_list', True) %}checked{% endif %}>
+                        <span>Itemized Product List</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_totals" {% if settings.get('show_totals', True) %}checked{% endif %}>
+                        <span>Subtotal, Tax & Total</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_payment_info" {% if settings.get('show_payment_info', True) %}checked{% endif %}>
+                        <span>Payment Information</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="show_terms" {% if settings.get('show_terms', True) %}checked{% endif %}>
+                        <span>Terms & Conditions</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Save Display Options</button>
+            </form>
+        </div>
+
+        <div>
+            <h4>Receipt Preview</h4>
+            <div style="padding: 16px; background: #f8f9fa; border-radius: 8px; font-family: monospace; font-size: 11px; line-height: 1.4; border: 1px solid #e2e8f0;">
+                <div style="text-align: center; margin-bottom: 8px;">
+                    <strong>PHARMASUITE PHARMACY</strong><br>
+                    123 Main Street, Nairobi<br>
+                    Phone: +254 700 000 000<br>
+                    ------------------------------
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    Transaction: TXN-001<br>
+                    Date: 2024-01-15 14:30<br>
+                    Cashier: John Doe
+                </div>
+
+                <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 4px 0; margin-bottom: 8px;">
+                    Paracetamol 500mg    KSh 25.00<br>
+                    Qty: 2                 KSh 50.00<br>
+                    ------------------------------<br>
+                    Ibuprofen 200mg       KSh 15.00<br>
+                    Qty: 1                 KSh 15.00
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    Subtotal:            KSh 65.00<br>
+                    Tax (8%):             KSh 5.20<br>
+                    <strong>Total:        KSh 70.20</strong>
+                </div>
+
+                <div style="text-align: center;">
+                    Payment: Cash<br>
+                    Amount Paid: KSh 100.00<br>
+                    Change: KSh 29.80<br>
+                    ------------------------------<br>
+                    Thank you for your business!<br>
+                    Returns accepted within 7 days
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Barcode & QR Code Settings</div>
+
+    <div class="grid-2">
+        <div>
+            <h4>Receipt Barcodes</h4>
+            <form method="POST" action="/receipt/settings/barcodes">
+                <div style="display: grid; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="include_transaction_barcode" {% if settings.get('include_transaction_barcode') %}checked{% endif %}>
+                        <span>Include transaction barcode</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="include_qr_code" {% if settings.get('include_qr_code') %}checked{% endif %}>
+                        <span>Include QR code for digital verification</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="include_customer_barcode" {% if settings.get('include_customer_barcode') %}checked{% endif %}>
+                        <span>Include customer loyalty barcode</span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label">Barcode Type</label>
+                    <select name="barcode_type" class="form-select">
+                        <option value="code128" {% if settings.get('barcode_type', 'code128') == 'code128' %}selected{% endif %}>Code 128</option>
+                        <option value="code39" {% if settings.get('barcode_type') == 'code39' %}selected{% endif %}>Code 39</option>
+                        <option value="ean13" {% if settings.get('barcode_type') == 'ean13' %}selected{% endif %}>EAN-13</option>
+                        <option value="qrcode" {% if settings.get('barcode_type') == 'qrcode' %}selected{% endif %}>QR Code Only</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 12px;">Save Barcode Settings</button>
+            </form>
+        </div>
+
+        <div>
+            <h4>Digital Features</h4>
+            <div class="alert alert-info">
+                <strong>Digital Receipt Features:</strong>
+                <ul style="margin: 8px 0 0 16px;">
+                    <li>QR codes for receipt verification</li>
+                    <li>Digital signature validation</li>
+                    <li>Customer feedback links</li>
+                    <li>Return/exchange QR codes</li>
+                    <li>Loyalty program integration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

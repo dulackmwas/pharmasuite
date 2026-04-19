@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Reconciliation Report - PharmaSuite{% endblock %}
+{% block header %}Reconciliation Report{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex flex-between">
+            <span>Reconciliation Report - {{ reconciliation.reconciliation_date.strftime('%B %d, %Y') }}</span>
+            <div>
+                <button onclick="window.print()" class="btn btn-primary">Print Report</button>
+                <a href="{{ url_for('reconciliation') }}" class="btn btn-secondary">Back to Reports</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2 mb-2">
+        <div>
+            <h4>Summary</h4>
+            <p><strong>Gateway:</strong> {{ reconciliation.gateway.display_name if reconciliation.gateway else 'Unknown' }}</p>
+            <p><strong>Date:</strong> {{ reconciliation.reconciliation_date.strftime('%B %d, %Y') }}</p>
+            <p><strong>Status:</strong>
+                <span class="badge badge-{% if reconciliation.status == 'completed' %}success{% else %}warning{% endif %}">
+                    {{ reconciliation.status.title() }}
+                </span>
+            </p>
+            <p><strong>Processed By:</strong> {{ reconciliation.user.name if reconciliation.user else 'System' }}</p>
+        </div>
+        <div>
+            <h4>Transaction Summary</h4>
+            <p><strong>Total Transactions:</strong> {{ summary.total_count }}</p>
+            <p><strong>Reconciled:</strong> {{ summary.reconciled_count }}</p>
+            <p><strong>Pending:</strong> {{ summary.pending_count }}</p>
+            <p><strong>Discrepancies:</strong>
+                {% if reconciliation.discrepancies_found > 0 %}
+                    <span class="badge badge-error">{{ reconciliation.discrepancies_found }}</span>
+                {% else %}
+                    <span class="badge badge-success">None</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid-2 mb-2">
+        <div>
+            <h4>Amount Summary</h4>
+            <p><strong>Total Amount:</strong> KSh {{ "%.2f"|format(summary.total_amount) }}</p>
+            <p><strong>Reconciled Amount:</strong> KSh {{ "%.2f"|format(summary.reconciled_amount) }}</p>
+            <p><strong>Pending Amount:</strong> KSh {{ "%.2f"|format(summary.pending_amount) }}</p>
+            <p><strong>Discrepancy Amount:</strong> KSh {{ "%.2f"|format(reconciliation.discrepancy_amount) }}</p>
+        </div>
+        <div>
+            <h4>Reconciliation Results</h4>
+            <div class="progress-bar" style="width: 100%; height: 20px; background: #E8EDF2; border-radius: 10px; margin: 10px 0;">
+                {% set reconciled_percent = (summary.reconciled_count / summary.total_count * 100) if summary.total_count > 0 else 0 %}
+                <div style="width: {{ reconciled_percent }}%; height: 100%; background: {% if reconciled_percent == 100 %}#4CAF50{% else %}#FFC107{% endif %}; border-radius: 10px;"></div>
+            </div>
+            <p>{{ "%.1f"|format(reconciled_percent) }}% reconciled</p>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header">Transaction Details</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Transaction ID</th>
+                <th>Payment #</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Initiated</th>
+                <th>Completed</th>
+                <th>Gateway Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in reconciliation.transactions %}
+            <tr>
+                <td>{{ transaction.transaction_id or '-' }}</td>
+                <td>{{ transaction.payment.payment_number if transaction.payment else '-' }}</td>
+                <td>KSh {{ "%.2f"|format(transaction.amount) }}</td>
+                <td>
+                    <span class="badge badge-{% if transaction.status == 'completed' %}success{% elif transaction.status == 'pending' %}warning{% else %}error{% endif %}">
+                        {{ transaction.status.title() }}
+                    </span>
+                </td>
+                <td>{{ transaction.initiated_at.strftime('%m/%d %H:%M') if transaction.initiated_at else '-' }}</td>
+                <td>{{ transaction.completed_at.strftime('%m/%d %H:%M') if transaction.completed_at else '-' }}</td>
+                <td>{{ transaction.status.title() }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if reconciliation.discrepancies_found > 0 %}
+<div class="card mt-2">
+    <div class="card-header">Discrepancies Found</div>
+    <div class="alert alert-error">
+        <p><strong>{{ reconciliation.discrepancies_found }} discrepancies found</strong></p>
+        <p>Total discrepancy amount: KSh {{ "%.2f"|format(reconciliation.discrepancy_amount) }}</p>
+        <p>Please review the transactions marked as failed or pending for manual reconciliation.</p>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Transaction ID</th>
+                <th>Payment #</th>
+                <th>Amount</th>
+                <th>Expected Status</th>
+                <th>Actual Status</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in reconciliation.transactions %}
+            {% if transaction.status != 'completed' %}
+            <tr>
+                <td>{{ transaction.transaction_id or '-' }}</td>
+                <td>{{ transaction.payment.payment_number if transaction.payment else '-' }}</td>
+                <td>KSh {{ "%.2f"|format(transaction.amount) }}</td>
+                <td>Completed</td>
+                <td>{{ transaction.status.title() }}</td>
+                <td>{{ transaction.gateway_response[:50] if transaction.gateway_response else 'No response' }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<style>
+@media print {
+    .card-header .flex-between > div:last-child {
+        display: none;
+    }
+    .btn {
+        display: none;
+    }
+    .alert {
+        border: 1px solid #000;
+        background: #fff;
+    }
+}
+</style>
+{% endblock %}
