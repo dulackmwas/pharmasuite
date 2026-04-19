@@ -1,5 +1,15 @@
 from flask import (
-    Flask,
+    Flask
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return "Hello from Railway!"
+
+if __name__ == "__main__":
+    # Get port from environment or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port),
     render_template,
     request,
     jsonify,
@@ -9,6 +19,7 @@ from flask import (
     send_file,
     send_from_directory,
     flash,
+
 )
 from datetime import datetime, date, timedelta
 from functools import wraps
